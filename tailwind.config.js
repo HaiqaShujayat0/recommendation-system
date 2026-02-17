@@ -11,35 +11,35 @@ export default {
         display: ['Inter', 'system-ui', 'sans-serif'],
       },
       colors: {
-        // Brand primary – Purple/Violet (professional, medical trust)
+        // Brand primary – Deep Teal-Blue (professional, clinical trust)
         primary: {
-          50: '#f5f3ff',
-          100: '#ede9fe',
-          200: '#ddd6fe',
-          300: '#c4b5fd',
-          400: '#a78bfa',
-          500: '#8b5cf6',
-          600: '#7c3aed',
-          700: '#6d28d9',
-          800: '#5b21b6',
-          900: '#4c1d95',
-          950: '#2e1065',
+          50: '#edf4f8',
+          100: '#d8e8f0',
+          200: '#b0d1e1',
+          300: '#84b5ce',
+          400: '#5e9ab8',
+          500: '#437d9d',
+          600: '#356480',
+          700: '#284B63',
+          800: '#1e3d52',
+          900: '#153243',
+          950: '#0d1b26',
         },
-        // Accent – Soft indigo (complementary)
+        // Accent – Sage Green (natural, calm complement)
         accent: {
-          50: '#eef2ff',
-          100: '#e0e7ff',
-          200: '#c7d2fe',
-          300: '#a5b4fc',
-          400: '#818cf8',
-          500: '#6366f1',
-          600: '#4f46e5',
-          700: '#4338ca',
-          800: '#3730a3',
-          900: '#312e81',
-          950: '#1e1b4b',
+          50: '#f5f6f3',
+          100: '#eef0eb',
+          200: '#dcddd6',
+          300: '#c8cbc0',
+          400: '#b4b8ab',
+          500: '#9ca18f',
+          600: '#818778',
+          700: '#6b7061',
+          800: '#575b4e',
+          900: '#3d403a',
+          950: '#21231e',
         },
-        // Secondary – Teal (calm, clinical context — keep for medical color coding)
+        // Secondary – Teal (calm, clinical context — for medical color coding)
         secondary: {
           50: '#f0fdfa',
           100: '#ccfbf1',
@@ -53,11 +53,11 @@ export default {
           900: '#134e4a',
           950: '#042f2e',
         },
-        // Surface tokens
+        // Surface tokens — creamy off-whites from palette
         surface: {
-          50: '#faf9fc',
-          100: '#f4f2f7',
-          200: '#eeeaF5',
+          50: '#F4F9E9',
+          100: '#EEF0EB',
+          200: '#e4e7df',
         },
       },
       boxShadow: {

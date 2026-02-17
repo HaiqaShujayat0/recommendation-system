@@ -63,7 +63,7 @@ export default function MedicationCard({
 
   return (
     <div
-      className={`group bg-white border border-slate-200/80 rounded-xl shadow-card p-4 animate-fade-in border-l-4 ${statusStyle[rec.status] || 'border-l-slate-300'
+      className={`group bg-white border border-slate-200/80 rounded-xl shadow-card p-5 animate-fade-in border-l-4 ${statusStyle[rec.status] || 'border-l-slate-300'
         } hover:shadow-card-md hover:scale-[1.01] transition-all duration-200`}
     >
       <div className="flex items-start justify-between gap-3 mb-3">
@@ -140,8 +140,8 @@ export default function MedicationCard({
           )}
         </div>
       ) : (
-        <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
-          <div className="flex flex-wrap gap-2">
+        <div className="mt-3 pt-3 border-t border-slate-100">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               size="sm"
               variant="success"
@@ -174,10 +174,10 @@ export default function MedicationCard({
           {onAskAI && (
             <button
               onClick={() => onAskAI(rec.id)}
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 hover:text-primary-600 hover:bg-primary-50 px-2 py-1.5 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+              className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-primary-500 hover:text-primary-700 hover:bg-primary-50 px-2.5 py-1.5 rounded-lg transition-all whitespace-nowrap ml-auto"
               title={`Ask AI about ${rec.med}`}
             >
-              <MessageCircle className="w-3 h-3" />
+              <MessageCircle className="w-3.5 h-3.5" />
               Ask AI
             </button>
           )}

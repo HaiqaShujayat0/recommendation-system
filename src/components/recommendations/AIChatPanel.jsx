@@ -123,7 +123,7 @@ export default function AIChatPanel({
       <div className="flex-shrink-0 animate-fade-in">
         <button
           onClick={onToggle}
-          className="w-12 h-full min-h-[500px] bg-white border border-slate-200/80 rounded-2xl shadow-card flex flex-col items-center justify-center gap-3 hover:shadow-card-md hover:border-primary-200 transition-all duration-300 group"
+          className="w-12 h-full bg-white border border-slate-200/80 rounded-2xl shadow-card flex flex-col items-center justify-center gap-3 hover:shadow-card-md hover:border-primary-200 transition-all duration-300 group"
           aria-label="Open AI chat"
         >
           <div className="w-8 h-8 rounded-xl bg-primary-50 flex items-center justify-center group-hover:bg-primary-100 transition-colors">
@@ -140,7 +140,7 @@ export default function AIChatPanel({
 
   // -- Expanded state --
   return (
-    <div className="w-[380px] flex-shrink-0 flex flex-col bg-white border border-slate-200/80 rounded-2xl shadow-card overflow-hidden animate-slide-in-right">
+    <div className="w-[380px] flex-shrink-0 flex flex-col bg-white border border-slate-200/80 rounded-2xl shadow-card overflow-hidden animate-slide-in-right h-full">
       {/* Purple accent bar */}
       <div className="h-1 bg-gradient-to-r from-primary-500 via-accent-500 to-primary-400 flex-shrink-0" />
 
@@ -172,7 +172,6 @@ export default function AIChatPanel({
       <div
         ref={scrollContainerRef}
         className="flex-1 overflow-y-auto px-4 py-4 space-y-4 min-h-0 scrollbar-thin"
-        style={{ maxHeight: 'calc(100vh - 340px)', minHeight: '300px' }}
       >
         {/* Welcome message if no messages */}
         {messages.length === 0 && (
@@ -194,17 +193,15 @@ export default function AIChatPanel({
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className={`flex gap-2.5 animate-fade-in ${
-              msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'
-            }`}
+            className={`flex gap-2.5 animate-fade-in ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'
+              }`}
           >
             {/* Avatar */}
             <div
-              className={`w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center ${
-                msg.role === 'ai'
-                  ? 'bg-gradient-to-br from-primary-500 to-accent-500'
-                  : 'bg-slate-600'
-              }`}
+              className={`w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center ${msg.role === 'ai'
+                ? 'bg-gradient-to-br from-primary-500 to-accent-500'
+                : 'bg-slate-600'
+                }`}
             >
               {msg.role === 'ai' ? (
                 <Brain className="w-3.5 h-3.5 text-white" />
@@ -215,11 +212,10 @@ export default function AIChatPanel({
 
             {/* Bubble */}
             <div
-              className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed ${
-                msg.role === 'ai'
-                  ? 'bg-slate-50 text-slate-700 border border-slate-100 rounded-tl-md'
-                  : 'bg-primary-600 text-white rounded-tr-md'
-              }`}
+              className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed ${msg.role === 'ai'
+                ? 'bg-slate-50 text-slate-700 border border-slate-100 rounded-tl-md'
+                : 'bg-primary-600 text-white rounded-tr-md'
+                }`}
             >
               {msg.role === 'ai' ? (
                 <div className="whitespace-pre-line">

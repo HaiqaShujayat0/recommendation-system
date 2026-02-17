@@ -24,8 +24,8 @@ const iconMap = {
 };
 
 /**
- * Clean collapsible sidebar — white background, purple active states.
- * NexHR-inspired: left purple bar on active item, clean icon-only collapsed state.
+ * Clean collapsible sidebar — white background, active states.
+ * Clinical Snapshot pinned to bottom like NexHR's "Webframe" widget.
  */
 export default function Sidebar({
   currentScreen,
@@ -47,28 +47,29 @@ export default function Sidebar({
   return (
     <aside
       ref={sidebarRef}
-      className={`bg-white shadow-sidebar flex-shrink-0 border-r border-slate-100 transition-all duration-300 ease-in-out overflow-hidden ${open ? 'w-60' : 'w-14'
+      className={`bg-white shadow-sidebar flex-shrink-0 border-r border-slate-100 transition-all duration-300 ease-in-out overflow-hidden relative ${open ? 'w-60' : 'w-14'
         }`}
     >
-      <div className="h-full flex flex-col relative">
-        {/* Collapse toggle */}
-        <button
-          type="button"
-          onClick={onToggle}
-          className="absolute top-3 right-2 z-10 w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 hover:text-primary-700 hover:bg-primary-50 transition-all duration-200"
-          aria-label={open ? 'Collapse sidebar' : 'Expand sidebar'}
-        >
-          <ChevronLeft
-            className={`w-4 h-4 transition-transform duration-300 ${open ? '' : 'rotate-180'
-              }`}
-          />
-        </button>
-
-        {/* Sidebar content */}
-        <div
-          className={`p-4 w-60 h-full flex flex-col gap-4 transition-opacity duration-200 ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'
+      {/* Collapse toggle */}
+      <button
+        type="button"
+        onClick={onToggle}
+        className="absolute top-3 right-2 z-10 w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 hover:text-primary-700 hover:bg-primary-50 transition-all duration-200"
+        aria-label={open ? 'Collapse sidebar' : 'Expand sidebar'}
+      >
+        <ChevronLeft
+          className={`w-4 h-4 transition-transform duration-300 ${open ? '' : 'rotate-180'
             }`}
-        >
+        />
+      </button>
+
+      {/* ─── Expanded state ─── */}
+      <div
+        className={`w-60 h-full transition-opacity duration-200 ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
+      >
+        {/* Nav content — bottom padding reserves space for the pinned snapshot */}
+        <div className="p-4 pb-[160px] space-y-4">
           <button
             type="button"
             onClick={onBackToSearch}
@@ -110,10 +111,12 @@ export default function Sidebar({
               );
             })}
           </nav>
+        </div>
 
-          {/* Key Clinical Snapshot */}
-          {patientData && (
-            <div className="mt-auto p-3.5 bg-primary-50 rounded-xl border border-primary-100">
+        {/* Clinical Snapshot — pinned to bottom of sidebar (like NexHR "Webframe") */}
+        {patientData && (
+          <div className="absolute bottom-0 left-0 w-60 p-4 bg-white border-t border-slate-100">
+            <div className="p-3.5 bg-primary-50 rounded-xl border border-primary-100">
               <h4 className="text-[10px] font-bold text-primary-600 uppercase mb-2.5 flex items-center gap-1.5 tracking-wide">
                 <TrendingUp className="w-3 h-3" />
                 Clinical Snapshot
@@ -156,33 +159,33 @@ export default function Sidebar({
                 </div>
               </div>
             </div>
-          )}
-        </div>
-
-        {/* Collapsed state: show icons only */}
-        {!open && (
-          <div className="flex flex-col items-center gap-2 pt-14 px-1">
-            {NAV_ITEMS.map(({ id, iconId }) => {
-              const Icon = iconMap[iconId];
-              const isActive = currentScreen === id;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => onNavigate(id)}
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 ${isActive
-                    ? 'bg-primary-50 text-primary-600 shadow-sm'
-                    : 'text-slate-400 hover:bg-slate-50 hover:text-primary-600'
-                    }`}
-                  title={id}
-                >
-                  {Icon && <Icon className="w-4 h-4" />}
-                </button>
-              );
-            })}
           </div>
         )}
       </div>
+
+      {/* ─── Collapsed state: icons only ─── */}
+      {!open && (
+        <div className="flex flex-col items-center gap-2 pt-14 px-1">
+          {NAV_ITEMS.map(({ id, iconId }) => {
+            const Icon = iconMap[iconId];
+            const isActive = currentScreen === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => onNavigate(id)}
+                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 ${isActive
+                  ? 'bg-primary-50 text-primary-600 shadow-sm'
+                  : 'text-slate-400 hover:bg-slate-50 hover:text-primary-600'
+                  }`}
+                title={id}
+              >
+                {Icon && <Icon className="w-4 h-4" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </aside>
   );
 }

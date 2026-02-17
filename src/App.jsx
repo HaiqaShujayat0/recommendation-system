@@ -9,14 +9,11 @@ import GlucoseForm from './components/patient/GlucoseForm';
 import MedicationsForm from './components/patient/MedicationsForm';
 import RecommendationList from './components/recommendations/RecommendationList';
 import AuditTable from './components/audit/AuditTable';
+import AuthLayout from './components/auth/AuthLayout';
 import { EMPTY_PATIENT_DATA } from './data/dummyData';
 
-/**
- * Root app: dashboard vs patient flow.
- * - No patient selected → Dashboard (PatientSearch).
- * - Patient selected → Sidebar + main content (demographics → … → recommendations, audit).
- */
 export default function App() {
+  const [user, setUser] = useState(null);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [currentScreen, setCurrentScreen] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -42,74 +39,44 @@ export default function App() {
     setSidebarOpen((o) => !o);
   }, []);
 
+  /* Auth gate — must be AFTER all hooks */
+  if (!user) {
+    return <AuthLayout onAuthenticated={setUser} />;
+  }
+
   const renderMain = () => {
     if (!selectedPatient) {
       return (
         <PatientSearch onSelectPatient={selectPatient} onNewPatient={newPatient} />
       );
     }
-
     switch (currentScreen) {
       case 'demographics':
-        return (
-          <DemographicsForm
-            data={patientData}
-            setData={setPatientData}
-            onNext={() => setCurrentScreen('conditions')}
-          />
-        );
+        return <DemographicsForm data={patientData} setData={setPatientData} onNext={() => setCurrentScreen('conditions')} />;
       case 'conditions':
-        return (
-          <ConditionsForm
-            data={patientData}
-            setData={setPatientData}
-            onNext={() => setCurrentScreen('labs')}
-          />
-        );
+        return <ConditionsForm data={patientData} setData={setPatientData} onNext={() => setCurrentScreen('labs')} />;
       case 'labs':
-        return (
-          <LabsForm
-            data={patientData}
-            setData={setPatientData}
-            onNext={() => setCurrentScreen('glucose')}
-          />
-        );
+        return <LabsForm data={patientData} setData={setPatientData} onNext={() => setCurrentScreen('glucose')} />;
       case 'glucose':
-        return (
-          <GlucoseForm
-            data={patientData}
-            setData={setPatientData}
-            onNext={() => setCurrentScreen('medications')}
-          />
-        );
+        return <GlucoseForm data={patientData} setData={setPatientData} onNext={() => setCurrentScreen('medications')} />;
       case 'medications':
-        return (
-          <MedicationsForm
-            data={patientData}
-            setData={setPatientData}
-            onNext={() => setCurrentScreen('recommendations')}
-          />
-        );
+        return <MedicationsForm data={patientData} setData={setPatientData} onNext={() => setCurrentScreen('recommendations')} />;
       case 'recommendations':
         return <RecommendationList patientData={patientData} />;
       case 'audit':
         return <AuditTable />;
       default:
-        return (
-          <DemographicsForm
-            data={patientData}
-            setData={setPatientData}
-            onNext={() => setCurrentScreen('conditions')}
-          />
-        );
+        return <DemographicsForm data={patientData} setData={setPatientData} onNext={() => setCurrentScreen('conditions')} />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f3ff] flex flex-col">
+    <div className="min-h-screen bg-[#edf4f8] flex flex-col">
       <Header
         selectedPatient={selectedPatient}
         onMenuClick={toggleSidebar}
+        user={user}
+        onSignOut={() => setUser(null)}
       />
       <div className="flex flex-1 overflow-hidden">
         {selectedPatient && (
@@ -122,10 +89,7 @@ export default function App() {
             onToggle={toggleSidebar}
           />
         )}
-        <main
-          className="flex-1 overflow-auto px-4 py-4 md:px-8 md:py-6"
-          role="main"
-        >
+        <main className="flex-1 overflow-auto px-4 py-4 md:px-8 md:py-6" role="main">
           <div className={`${currentScreen === 'recommendations' ? 'max-w-[1440px]' : 'max-w-6xl'} mx-auto space-y-4`}>
             {renderMain()}
           </div>

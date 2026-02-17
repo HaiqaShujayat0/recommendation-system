@@ -2,10 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ═══════════════════════════════════════════════
-   GLYERAL — Clean Medical Design System
-   Purple/Violet • Professional Healthcare
-   ═══════════════════════════════════════════════ */
+
 
 * {
   box-sizing: border-box;
@@ -20,9 +17,9 @@ body {
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #f5f3ff;
+  background: #edf4f8;
   min-height: 100vh;
-  color: #1e1b4b;
+  color: #0d1b26;
 }
 
 #root {
@@ -58,13 +55,13 @@ body {
    Custom Form Controls
    ═══════════════════════════════════════════════ */
 
-/* ─── Range Slider (Purple Track) ─── */
+/* ─── Range Slider (Teal-Blue Track) ─── */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   height: 6px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #ede9fe, #ddd6fe);
+  background: linear-gradient(90deg, #d8e8f0, #b0d1e1);
   outline: none;
   cursor: pointer;
   transition: background 0.2s;
@@ -76,25 +73,25 @@ input[type="range"]::-webkit-slider-thumb {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  background: linear-gradient(135deg, #437d9d, #356480);
   border: 3px solid white;
-  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.35);
+  box-shadow: 0 2px 8px rgba(40, 75, 99, 0.35);
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
 input[type="range"]::-webkit-slider-thumb:hover {
   transform: scale(1.15);
-  box-shadow: 0 3px 12px rgba(124, 58, 237, 0.5);
+  box-shadow: 0 3px 12px rgba(40, 75, 99, 0.5);
 }
 
 input[type="range"]::-moz-range-thumb {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  background: linear-gradient(135deg, #437d9d, #356480);
   border: 3px solid white;
-  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.35);
+  box-shadow: 0 2px 8px rgba(40, 75, 99, 0.35);
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
 }
@@ -126,7 +123,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 input[type="date"]::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
-  background-color: rgba(124, 58, 237, 0.08);
+  background-color: rgba(40, 75, 99, 0.08);
 }
 
 /* ─── Custom Radio Buttons ─── */
@@ -144,7 +141,7 @@ input[type="radio"] {
 }
 
 input[type="radio"]:checked {
-  border-color: #7c3aed;
+  border-color: #356480;
   background: white;
 }
 
@@ -157,13 +154,13 @@ input[type="radio"]:checked::after {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  background: linear-gradient(135deg, #437d9d, #356480);
   animation: check-bounce 0.3s ease-out;
 }
 
 input[type="radio"]:hover {
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+  border-color: #437d9d;
+  box-shadow: 0 0 0 3px rgba(40, 75, 99, 0.1);
 }
 
 /* ─── Custom Number Inputs (hide spinners) ─── */
