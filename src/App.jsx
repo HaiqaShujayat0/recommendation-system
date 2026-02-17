@@ -9,18 +9,26 @@ import GlucoseForm from './components/patient/GlucoseForm';
 import MedicationsForm from './components/patient/MedicationsForm';
 import RecommendationList from './components/recommendations/RecommendationList';
 import AuditTable from './components/audit/AuditTable';
+import AuthLayout from './components/auth/AuthLayout';
 import { EMPTY_PATIENT_DATA } from './data/dummyData';
 
 /**
- * Root app: dashboard vs patient flow.
+ * Root app: auth gate → dashboard vs patient flow.
+ * - Not authenticated → AuthLayout (Login / Sign Up).
  * - No patient selected → Dashboard (PatientSearch).
  * - Patient selected → Sidebar + main content (demographics → … → recommendations, audit).
  */
 export default function App() {
+  const [user, setUser] = useState(null);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [currentScreen, setCurrentScreen] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [patientData, setPatientData] = useState(EMPTY_PATIENT_DATA);
+
+  /* ── Auth gate ── */
+  if (!user) {
+    return <AuthLayout onAuthenticated={setUser} />;
+  }
 
   const selectPatient = useCallback((patient) => {
     setSelectedPatient(patient);
@@ -110,6 +118,8 @@ export default function App() {
       <Header
         selectedPatient={selectedPatient}
         onMenuClick={toggleSidebar}
+        user={user}
+        onSignOut={() => setUser(null)}
       />
       <div className="flex flex-1 overflow-hidden">
         {selectedPatient && (
