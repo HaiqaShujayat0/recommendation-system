@@ -126,7 +126,7 @@ export default function App() {
           className="flex-1 overflow-auto px-4 py-4 md:px-8 md:py-6"
           role="main"
         >
-          <div className="max-w-6xl mx-auto space-y-4">
+          <div className={`${currentScreen === 'recommendations' ? 'max-w-[1440px]' : 'max-w-6xl'} mx-auto space-y-4`}>
             {renderMain()}
           </div>
         </main>
