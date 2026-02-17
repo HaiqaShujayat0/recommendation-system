@@ -25,11 +25,6 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [patientData, setPatientData] = useState(EMPTY_PATIENT_DATA);
 
-  /* ── Auth gate ── */
-  if (!user) {
-    return <AuthLayout onAuthenticated={setUser} />;
-  }
-
   const selectPatient = useCallback((patient) => {
     setSelectedPatient(patient);
     setCurrentScreen('demographics');
@@ -49,6 +44,11 @@ export default function App() {
   const toggleSidebar = useCallback(() => {
     setSidebarOpen((o) => !o);
   }, []);
+
+  /* ── Auth gate ── */
+  if (!user) {
+    return <AuthLayout onAuthenticated={setUser} />;
+  }
 
   const renderMain = () => {
     if (!selectedPatient) {
