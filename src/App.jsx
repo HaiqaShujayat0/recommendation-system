@@ -11,9 +11,10 @@ import RecommendationList from './components/recommendations/RecommendationList'
 import AuditTable from './components/audit/AuditTable';
 import AuthLayout from './components/auth/AuthLayout';
 import { EMPTY_PATIENT_DATA } from './data/dummyData';
+import { getSession, clearSession } from './services/authService';
 
 export default function App() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => getSession());
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [currentScreen, setCurrentScreen] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -76,7 +77,7 @@ export default function App() {
         selectedPatient={selectedPatient}
         onMenuClick={toggleSidebar}
         user={user}
-        onSignOut={() => setUser(null)}
+        onSignOut={async () => { await clearSession(); setUser(null); }}
       />
       <div className="flex flex-1 overflow-hidden">
         {selectedPatient && (

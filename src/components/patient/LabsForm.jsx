@@ -92,8 +92,10 @@ export default function LabsForm({ data, setData, onNext }) {
     onNext();
   };
 
+
   const egfr = watch('egfr');
   const ckd = getCkdStage(egfr);
+
 
   return (
     <div className="max-w-3xl mx-auto">

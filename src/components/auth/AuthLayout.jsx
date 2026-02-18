@@ -5,26 +5,51 @@ import {
     ShieldCheck,
     Activity,
     Stethoscope,
+    AlertCircle,
 } from 'lucide-react';
 import LoginForm from './LoginForm';
 import SignUpForm from './SignUpForm';
+import { signIn, signUp } from '../../services/authService';
 
 /**
  * Auth layout — NexHR-inspired centered card with branded left panel.
- * Displayed as a single elevated card floating over a gradient background.
+ * Now wired to localStorage-based auth service.
  */
 export default function AuthLayout({ onAuthenticated }) {
     const [mode, setMode] = useState('login');
+    const [authError, setAuthError] = useState('');
 
-    const handleLogin = (data) => {
-        onAuthenticated({ ...data, name: data.email.split('@')[0] });
+    const handleLogin = async (data) => {
+        setAuthError('');
+        const result = await signIn({
+            email: data.email,
+            password: data.password,
+        });
+        if (result.success) {
+            onAuthenticated(result.user);
+        } else {
+            setAuthError(result.error);
+        }
     };
 
-    const handleSignUp = (data) => {
-        onAuthenticated({
+    const handleSignUp = async (data) => {
+        setAuthError('');
+        const result = await signUp({
+            firstName: data.firstName,
+            lastName: data.lastName,
             email: data.email,
-            name: `${data.firstName} ${data.lastName}`,
+            password: data.password,
         });
+        if (result.success) {
+            onAuthenticated(result.user);
+        } else {
+            setAuthError(result.error);
+        }
+    };
+
+    const switchMode = (newMode) => {
+        setAuthError('');
+        setMode(newMode);
     };
 
     return (
@@ -145,15 +170,22 @@ export default function AuthLayout({ onAuthenticated }) {
                     {/* Form content */}
                     <div className="flex-1 flex items-center justify-center px-6 py-8 md:px-10">
                         <div className="w-full max-w-sm">
+                            {/* Auth error banner */}
+                            {authError && (
+                                <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 flex items-center gap-2.5 animate-fade-in">
+                                    <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                                    <p className="text-sm text-red-600 font-medium">{authError}</p>
+                                </div>
+                            )}
                             {mode === 'login' ? (
                                 <LoginForm
                                     onLogin={handleLogin}
-                                    onSwitchToSignUp={() => setMode('signup')}
+                                    onSwitchToSignUp={() => switchMode('signup')}
                                 />
                             ) : (
                                 <SignUpForm
                                     onSignUp={handleSignUp}
-                                    onSwitchToLogin={() => setMode('login')}
+                                    onSwitchToLogin={() => switchMode('login')}
                                 />
                             )}
                         </div>

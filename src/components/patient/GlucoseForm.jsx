@@ -22,6 +22,8 @@ const TIME_SLOTS = [
 
 const SLOT_KEYS = TIME_SLOTS.map((s) => s.key);
 
+
+
 export default function GlucoseForm({ data, setData, onNext }) {
   const {
     register,
