@@ -1,24 +1,28 @@
 import React, { useState, useMemo } from 'react';
 import { Search, Plus } from 'lucide-react';
-import { PATIENTS } from '../../data/dummyData';
+import { useNavigate } from 'react-router-dom';
+import { usePatientsQuery } from '../../hooks/usePatients';
 import PatientCard from './PatientCard';
 import StatsCards from './StatsCards';
 import Button from '../ui/Button';
 
 /**
  * Clean dashboard: search input, stats, filtered patient list.
+ * Patient list from React Query (TODO: real API in patientService.fetchPatients).
  */
-export default function PatientSearch({ onSelectPatient, onNewPatient }) {
+export default function PatientSearch() {
   const [search, setSearch] = useState('');
+  const navigate = useNavigate();
+  const { data: patients = [], isLoading, error } = usePatientsQuery();
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return PATIENTS;
-    return PATIENTS.filter(
+    if (!q) return patients;
+    return patients.filter(
       (p) =>
         p.name.toLowerCase().includes(q) || p.mrNumber.toLowerCase().includes(q)
     );
-  }, [search]);
+  }, [search, patients]);
 
   return (
     <div className="max-w-5xl mx-auto space-y-5 animate-fade-in">
@@ -36,7 +40,7 @@ export default function PatientSearch({ onSelectPatient, onNewPatient }) {
         </div>
         <Button
           type="button"
-          onClick={onNewPatient}
+          onClick={() => navigate('/patient/new/demographics')}
           icon={<Plus className="w-4 h-4" />}
         >
           New Patient
@@ -74,7 +78,15 @@ export default function PatientSearch({ onSelectPatient, onNewPatient }) {
             </span>
           </div>
           <div className="divide-y divide-slate-100 stagger-children">
-            {filtered.length === 0 ? (
+            {error ? (
+              <div className="px-4 py-10 text-center text-red-600 text-sm">
+                Failed to load patients.
+              </div>
+            ) : isLoading ? (
+              <div className="px-4 py-10 text-center text-slate-500 text-sm">
+                Loading patients…
+              </div>
+            ) : filtered.length === 0 ? (
               <div className="px-4 py-10 text-center text-slate-500 text-sm">
                 No patients match your search.
               </div>
@@ -83,7 +95,7 @@ export default function PatientSearch({ onSelectPatient, onNewPatient }) {
                 <PatientCard
                   key={patient.id}
                   patient={patient}
-                  onSelect={onSelectPatient}
+                  onSelect={(p) => navigate(`/patient/${p.id}/demographics`)}
                 />
               ))
             )}

@@ -11,6 +11,7 @@ import {
   TrendingUp,
   ChevronLeft,
 } from 'lucide-react';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { NAV_ITEMS } from '../../data/dummyData';
 
 const iconMap = {
@@ -27,10 +28,10 @@ const iconMap = {
  * Clean collapsible sidebar — white background, active states.
  * Collapsed state shows icon-only nav with hover tooltips (like Claude's sidebar).
  * Clinical Snapshot pinned to bottom when expanded.
+ *
+ * Navigation is handled internally via React Router (useNavigate + useLocation).
  */
 export default function Sidebar({
-  currentScreen,
-  onNavigate,
   onBackToSearch,
   patientData,
   open,
@@ -38,6 +39,12 @@ export default function Sidebar({
 }) {
   const sidebarRef = useRef(null);
   const [hoveredItem, setHoveredItem] = useState(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { patientId } = useParams();
+
+  const isActive = (id) => location.pathname.endsWith(`/${id}`);
+  const handleNavigate = (id) => navigate(`/patient/${patientId}/${id}`);
 
   useEffect(() => {
     if (open && sidebarRef.current) {
@@ -87,25 +94,25 @@ export default function Sidebar({
           <nav className="space-y-1 stagger-children" aria-label="Patient sections">
             {NAV_ITEMS.map(({ id, iconId, label }) => {
               const Icon = iconMap[iconId];
-              const isActive = currentScreen === id;
+              const active = isActive(id);
               return (
                 <button
                   key={id}
                   type="button"
-                  onClick={() => onNavigate(id)}
+                  onClick={() => handleNavigate(id)}
                   className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 relative ${
-                    isActive
+                    active
                       ? 'bg-primary-50 text-primary-700 font-semibold'
                       : 'text-slate-600 hover:bg-slate-50 hover:text-primary-600'
                   }`}
                 >
-                  {isActive && (
+                  {active && (
                     <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-primary-500 rounded-r-full" />
                   )}
                   {Icon && (
                     <Icon
                       className={`w-4 h-4 flex-shrink-0 ${
-                        isActive ? 'text-primary-500' : ''
+                        active ? 'text-primary-500' : ''
                       }`}
                     />
                   )}
@@ -194,24 +201,24 @@ export default function Sidebar({
         <nav className="flex flex-col items-center gap-1 px-1.5" aria-label="Patient sections">
           {NAV_ITEMS.map(({ id, iconId, label }) => {
             const Icon = iconMap[iconId];
-            const isActive = currentScreen === id;
+            const active = isActive(id);
             const isHovered = hoveredItem === id;
 
             return (
               <div key={id} className="relative">
                 <button
                   type="button"
-                  onClick={() => onNavigate(id)}
+                  onClick={() => handleNavigate(id)}
                   onMouseEnter={() => setHoveredItem(id)}
                   onMouseLeave={() => setHoveredItem(null)}
                   className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 relative ${
-                    isActive
+                    active
                       ? 'bg-primary-100 text-primary-700 shadow-sm'
                       : 'text-slate-400 hover:bg-slate-100 hover:text-slate-700'
                   }`}
                   aria-label={label}
                 >
-                  {isActive && (
+                  {active && (
                     <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 bg-primary-500 rounded-r-full -ml-1.5" />
                   )}
                   {Icon && <Icon className="w-[18px] h-[18px]" />}

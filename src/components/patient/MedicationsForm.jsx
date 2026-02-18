@@ -1,8 +1,11 @@
 import React, { useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { Brain, ChevronRight, Pill } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
 import FormCard from '../ui/FormCard';
 import Button from '../ui/Button';
+import { usePatient } from '../../context/PatientContext';
+import { useUpdatePatientMutation } from '../../hooks/usePatients';
 
 /**
  * Medications Form Component with Validation
@@ -27,7 +30,12 @@ const MEDICATIONS = [
   { key: 'repaglinide_dinner', label: 'Repaglinide (Before Dinner)', class: 'Meglitinide', range: '0.5-2mg', type: 'select', options: [0, 0.5, 1, 1.5, 2] },
 ];
 
-export default function MedicationsForm({ data, setData, onNext }) {
+export default function MedicationsForm() {
+  const { patientData, setPatientData } = usePatient();
+  const navigate = useNavigate();
+  const { patientId } = useParams();
+  const updatePatientMutation = useUpdatePatientMutation();
+
   const {
     register,
     handleSubmit,
@@ -35,17 +43,17 @@ export default function MedicationsForm({ data, setData, onNext }) {
     setValue,
     formState: { errors },
   } = useForm({
-    defaultValues: data.medications,
+    defaultValues: patientData.medications,
     mode: 'onChange',
   });
 
-  // Sync form → parent via watch subscription (optimized)
+  // Sync form → PatientContext via watch subscription
   useEffect(() => {
     const subscription = watch((formValues) => {
-      setData((prev) => ({ ...prev, medications: formValues }));
+      setPatientData((prev) => ({ ...prev, medications: formValues }));
     });
     return () => subscription.unsubscribe();
-  }, [watch, setData]);
+  }, [watch, setPatientData]);
 
   const update = useCallback((key, value) => {
     setValue(key, value);
@@ -157,8 +165,10 @@ export default function MedicationsForm({ data, setData, onNext }) {
   };
 
   const onSubmit = (formData) => {
-    setData((prev) => ({ ...prev, medications: formData }));
-    onNext();
+    const next = { ...patientData, medications: formData };
+    setPatientData(next);
+    updatePatientMutation.mutate({ patientId, patientData: next });
+    navigate(`/patient/${patientId}/recommendations`);
   };
 
   return (

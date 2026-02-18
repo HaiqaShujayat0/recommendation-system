@@ -7,26 +7,30 @@ import {
     Stethoscope,
     AlertCircle,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import LoginForm from './LoginForm';
 import SignUpForm from './SignUpForm';
-import { signIn, signUp } from '../../services/authService';
+import { useSignIn, useSignUp } from '../../hooks/useAuth';
 
 /**
- * Auth layout — NexHR-inspired centered card with branded left panel.
- * Now wired to localStorage-based auth service.
+ * Auth layout — public route (/login).
+ * Uses React Query mutations so the shared user cache updates on successful auth.
  */
-export default function AuthLayout({ onAuthenticated }) {
+export default function AuthLayout() {
     const [mode, setMode] = useState('login');
     const [authError, setAuthError] = useState('');
+    const navigate = useNavigate();
+    const signInMutation = useSignIn();
+    const signUpMutation = useSignUp();
 
     const handleLogin = async (data) => {
         setAuthError('');
-        const result = await signIn({
+        const result = await signInMutation.mutateAsync({
             email: data.email,
             password: data.password,
         });
         if (result.success) {
-            onAuthenticated(result.user);
+            navigate('/dashboard');
         } else {
             setAuthError(result.error);
         }
@@ -34,14 +38,14 @@ export default function AuthLayout({ onAuthenticated }) {
 
     const handleSignUp = async (data) => {
         setAuthError('');
-        const result = await signUp({
+        const result = await signUpMutation.mutateAsync({
             firstName: data.firstName,
             lastName: data.lastName,
             email: data.email,
             password: data.password,
         });
         if (result.success) {
-            onAuthenticated(result.user);
+            navigate('/dashboard');
         } else {
             setAuthError(result.error);
         }

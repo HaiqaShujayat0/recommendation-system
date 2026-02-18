@@ -1,8 +1,11 @@
 import React, { useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { CheckCircle, AlertTriangle, ChevronRight } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
 import FormCard from '../ui/FormCard';
 import Button from '../ui/Button';
+import { usePatient } from '../../context/PatientContext';
+import { useUpdatePatientMutation } from '../../hooks/usePatients';
 
 /**
  * Conditions Form Component with Validation
@@ -57,23 +60,28 @@ const CONDITIONS = [
   },
 ];
 
-export default function ConditionsForm({ data, setData, onNext }) {
+export default function ConditionsForm() {
+  const { patientData, setPatientData } = usePatient();
+  const navigate = useNavigate();
+  const { patientId } = useParams();
+  const updatePatientMutation = useUpdatePatientMutation();
+
   const {
     watch,
     setValue,
     handleSubmit,
   } = useForm({
-    defaultValues: data.healthIssues,
+    defaultValues: patientData.healthIssues,
     mode: 'onChange',
   });
 
-  // Sync form → parent via watch subscription (optimized)
+  // Sync form → PatientContext via watch subscription
   useEffect(() => {
     const subscription = watch((formValues) => {
-      setData((prev) => ({ ...prev, healthIssues: formValues }));
+      setPatientData((prev) => ({ ...prev, healthIssues: formValues }));
     });
     return () => subscription.unsubscribe();
-  }, [watch, setData]);
+  }, [watch, setPatientData]);
 
   // Ensure DM is always checked
   const dmValue = watch('dm');
@@ -89,8 +97,10 @@ export default function ConditionsForm({ data, setData, onNext }) {
   }, [setValue, watch]);
 
   const onSubmit = (formData) => {
-    setData((prev) => ({ ...prev, healthIssues: formData }));
-    onNext();
+    const next = { ...patientData, healthIssues: formData };
+    setPatientData(next);
+    updatePatientMutation.mutate({ patientId, patientData: next });
+    navigate(`/patient/${patientId}/labs`);
   };
 
   return (

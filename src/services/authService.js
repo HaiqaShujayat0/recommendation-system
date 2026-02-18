@@ -152,3 +152,94 @@ export async function clearSession() {
     }
     localStorage.removeItem(TOKEN_KEY);
 }
+
+/* ─── Profile & settings ─── */
+
+function friendlyProfileError(raw) {
+    if (!raw) return 'Unable to load your profile. Please try again.';
+    return typeof raw === 'string' ? raw : 'Unable to load your profile. Please try again.';
+}
+
+function friendlyUpdateError(raw) {
+    if (!raw) return 'Unable to save changes. Please try again.';
+    return typeof raw === 'string' ? raw : 'Unable to save changes. Please try again.';
+}
+
+/**
+ * Fetch the logged-in user's profile.
+ * Expected shape includes:
+ *  id, email, first_name, last_name, role, org_id, is_active, created_at
+ */
+export async function fetchUserProfile() {
+    const token = getAuthToken();
+    if (!token) return { success: false, error: 'You are not signed in.' };
+
+    try {
+        const res = await fetch(`${AUTH_BASE}/user_profile`, {
+            method: 'GET',
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+            return { success: false, error: friendlyProfileError(data?.error || data?.Message) };
+        }
+
+        return { success: true, profile: data };
+    } catch {
+        return { success: false, error: 'Cannot reach the server. Is the backend running?' };
+    }
+}
+
+/**
+ * Update profile fields (first_name, last_name, email, org_id).
+ * Backend: POST /user_profile (Bearer required)
+ */
+export async function updateUserProfile({ first_name, last_name, email, org_id }) {
+    const token = getAuthToken();
+    if (!token) return { success: false, error: 'You are not signed in.' };
+
+    try {
+        const res = await fetch(`${AUTH_BASE}/user_profile`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ first_name, last_name, email, org_id }),
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+            return { success: false, error: friendlyUpdateError(data?.error || data?.Message) };
+        }
+
+        return { success: true, profile: data };
+    } catch {
+        return { success: false, error: 'Cannot reach the server. Is the backend running?' };
+    }
+}
+
+/**
+ * Update password.
+ * Backend: POST /updatepassword (Bearer required)
+ * We send both current + new to be safe across implementations.
+ */
+export async function updatePassword({ current_password, new_password }) {
+    const token = getAuthToken();
+    if (!token) return { success: false, error: 'You are not signed in.' };
+
+    try {
+        const res = await fetch(`${AUTH_BASE}/updatepassword`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ current_password, new_password }),
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+            return { success: false, error: friendlyUpdateError(data?.error || data?.Message) };
+        }
+
+        return { success: true, data };
+    } catch {
+        return { success: false, error: 'Cannot reach the server. Is the backend running?' };
+    }
+}

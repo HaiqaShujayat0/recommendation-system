@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   FileText,
   Download,
@@ -7,22 +7,24 @@ import {
   Pen,
   X as XIcon,
 } from 'lucide-react';
-import { AUDIT_LOGS } from '../../data/dummyData';
 import FormCard from '../ui/FormCard';
 import Button from '../ui/Button';
+import { useAuditLogsQuery } from '../../hooks/useAudit';
 
 /**
  * Audit Trail table — clean white rows with status badges.
+ * Data from React Query (TODO: real API in auditService.fetchAuditLogs).
  */
 export default function AuditTable() {
   const [filter, setFilter] = useState('All');
+  const { data: auditLogs = [], isLoading, error } = useAuditLogsQuery();
 
   const FILTERS = ['All', 'Approved', 'Modified', 'Rejected'];
 
-  const filtered = AUDIT_LOGS.filter((log) => {
-    if (filter === 'All') return true;
-    return log.status === filter;
-  });
+  const filtered = useMemo(() => {
+    if (filter === 'All') return auditLogs;
+    return auditLogs.filter((log) => log.status === filter);
+  }, [filter, auditLogs]);
 
   const getBadge = (status) => {
     switch (status) {
@@ -65,6 +67,14 @@ export default function AuditTable() {
           </Button>
         }
       >
+        {error && (
+          <div className="mb-4 px-4 py-2 rounded-lg bg-red-50 text-red-700 text-sm">
+            Failed to load audit log.
+          </div>
+        )}
+        {isLoading && (
+          <div className="mb-4 text-sm text-slate-500">Loading audit log…</div>
+        )}
         {/* Filters */}
         <div className="flex items-center gap-2 mb-5 overflow-x-auto">
           <Filter className="w-4 h-4 text-slate-400 flex-shrink-0" />

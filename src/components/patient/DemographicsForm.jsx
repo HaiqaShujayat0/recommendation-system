@@ -1,9 +1,12 @@
 import React, { useEffect, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { Scale, ChevronRight } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
 import Input from '../ui/Input';
 import FormCard from '../ui/FormCard';
 import Button from '../ui/Button';
+import { usePatient } from '../../context/PatientContext';
+import { useUpdatePatientMutation } from '../../hooks/usePatients';
 
 /**
  * Demographics Form Component with Validation
@@ -23,7 +26,12 @@ import Button from '../ui/Button';
 // Today's date string for HTML max attribute on date inputs
 const TODAY_ISO = new Date().toISOString().split('T')[0];
 
-export default function DemographicsForm({ data, setData, onNext }) {
+export default function DemographicsForm() {
+  const { patientData, setPatientData } = usePatient();
+  const navigate = useNavigate();
+  const { patientId } = useParams();
+  const updatePatientMutation = useUpdatePatientMutation();
+
   const {
     register,
     handleSubmit,
@@ -31,7 +39,7 @@ export default function DemographicsForm({ data, setData, onNext }) {
     setValue,
     formState: { errors, isValid },
   } = useForm({
-    defaultValues: data.demographics,
+    defaultValues: patientData.demographics,
     mode: 'onChange',
   });
 
@@ -67,13 +75,13 @@ export default function DemographicsForm({ data, setData, onNext }) {
     }
   }, [weight, height, setValue]);
 
-  // Sync form → parent via watch subscription (optimized — avoids stale closure)
+  // Sync form → PatientContext via watch subscription
   useEffect(() => {
     const subscription = watch((formValues) => {
-      setData((prev) => ({ ...prev, demographics: formValues }));
+      setPatientData((prev) => ({ ...prev, demographics: formValues }));
     });
     return () => subscription.unsubscribe();
-  }, [watch, setData]);
+  }, [watch, setPatientData]);
 
   const getBmiStyle = useCallback((bmi) => {
     if (!bmi) return 'bg-slate-100 text-slate-500 border-slate-200';
@@ -92,8 +100,11 @@ export default function DemographicsForm({ data, setData, onNext }) {
   }, []);
 
   const onSubmit = (formData) => {
-    setData((prev) => ({ ...prev, demographics: formData }));
-    onNext();
+    const next = { ...patientData, demographics: formData };
+    setPatientData(next);
+    // TODO: Real API — persistence happens in patientService.updatePatient
+    updatePatientMutation.mutate({ patientId, patientData: next });
+    navigate(`/patient/${patientId}/conditions`);
   };
 
   const currentBmi = watch('bmi');

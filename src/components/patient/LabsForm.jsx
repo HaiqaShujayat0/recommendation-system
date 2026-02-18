@@ -1,8 +1,11 @@
 import React, { useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { Activity, ChevronRight } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
 import FormCard from '../ui/FormCard';
 import Button from '../ui/Button';
+import { usePatient } from '../../context/PatientContext';
+import { useUpdatePatientMutation } from '../../hooks/usePatients';
 
 /**
  * Labs Form Component with Validation
@@ -23,24 +26,29 @@ const LABS = [
   { key: 'urineAlbumin', label: 'Urine Albumin', unit: 'mg/L', normal: '< 30', critical: false },
 ];
 
-export default function LabsForm({ data, setData, onNext }) {
+export default function LabsForm() {
+  const { patientData, setPatientData } = usePatient();
+  const navigate = useNavigate();
+  const { patientId } = useParams();
+  const updatePatientMutation = useUpdatePatientMutation();
+
   const {
     register,
     handleSubmit,
     watch,
     formState: { errors, isValid },
   } = useForm({
-    defaultValues: data.labs,
+    defaultValues: patientData.labs,
     mode: 'onChange',
   });
 
-  // Sync form → parent via watch subscription (optimized)
+  // Sync form → PatientContext via watch subscription
   useEffect(() => {
     const subscription = watch((formValues) => {
-      setData((prev) => ({ ...prev, labs: formValues }));
+      setPatientData((prev) => ({ ...prev, labs: formValues }));
     });
     return () => subscription.unsubscribe();
-  }, [watch, setData]);
+  }, [watch, setPatientData]);
 
   const getStatusStyle = useCallback((key, value) => {
     if (!value) {
@@ -88,8 +96,10 @@ export default function LabsForm({ data, setData, onNext }) {
   }, []);
 
   const onSubmit = (formData) => {
-    setData((prev) => ({ ...prev, labs: formData }));
-    onNext();
+    const next = { ...patientData, labs: formData };
+    setPatientData(next);
+    updatePatientMutation.mutate({ patientId, patientData: next });
+    navigate(`/patient/${patientId}/glucose`);
   };
 
 

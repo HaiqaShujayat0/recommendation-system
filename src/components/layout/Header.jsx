@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Brain, User, Menu, Sparkles, Search, Bell, LogOut, ChevronDown } from 'lucide-react';
+import { Brain, User, Menu, Sparkles, Search, Bell, LogOut, ChevronDown, Settings } from 'lucide-react';
+import SettingsModal from '../settings/SettingsModal';
 
 export default function Header({ selectedPatient, onMenuClick, user, onSignOut }) {
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -62,6 +64,18 @@ export default function Header({ selectedPatient, onMenuClick, user, onSignOut }
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-400 rounded-full" />
           </button>
 
+          <button
+            type="button"
+            className="p-2 hover:bg-white/10 rounded-xl transition-colors"
+            aria-label="Settings"
+            onClick={() => {
+              setShowUserMenu(false);
+              setShowSettings(true);
+            }}
+          >
+            <Settings className="w-4.5 h-4.5 text-primary-200" />
+          </button>
+
           {/* User avatar + dropdown */}
           <div className="relative" ref={menuRef}>
             <button type="button" onClick={() => setShowUserMenu((s) => !s)} className="flex items-center gap-2 p-1 pr-2 hover:bg-white/10 rounded-xl transition-all duration-200" aria-label="User menu">
@@ -85,6 +99,8 @@ export default function Header({ selectedPatient, onMenuClick, user, onSignOut }
           </div>
         </div>
       </div>
+
+      <SettingsModal open={showSettings} onClose={() => setShowSettings(false)} />
     </header>
   );
 }

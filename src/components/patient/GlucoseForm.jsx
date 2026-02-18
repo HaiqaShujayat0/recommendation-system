@@ -1,8 +1,11 @@
 import React, { useEffect, useCallback, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { AlertTriangle, ChevronRight, Droplets } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
 import FormCard from '../ui/FormCard';
 import Button from '../ui/Button';
+import { usePatient } from '../../context/PatientContext';
+import { useUpdatePatientMutation } from '../../hooks/usePatients';
 
 /**
  * Glucose Form Component with Validation
@@ -24,7 +27,12 @@ const SLOT_KEYS = TIME_SLOTS.map((s) => s.key);
 
 
 
-export default function GlucoseForm({ data, setData, onNext }) {
+export default function GlucoseForm() {
+  const { patientData, setPatientData } = usePatient();
+  const navigate = useNavigate();
+  const { patientId } = useParams();
+  const updatePatientMutation = useUpdatePatientMutation();
+
   const {
     register,
     handleSubmit,
@@ -32,7 +40,7 @@ export default function GlucoseForm({ data, setData, onNext }) {
     setValue,
     formState: { errors },
   } = useForm({
-    defaultValues: data.bloodSugar,
+    defaultValues: patientData.bloodSugar,
     mode: 'onChange',
   });
 
@@ -54,13 +62,13 @@ export default function GlucoseForm({ data, setData, onNext }) {
     setValue('average', average, { shouldValidate: false });
   }, [beforeBreakfast, beforeLunch, beforeDinner, beforeBed, setValue]);
 
-  // Sync form → parent via watch subscription (optimized)
+  // Sync form → PatientContext via watch subscription
   useEffect(() => {
     const subscription = watch((formValues) => {
-      setData((prev) => ({ ...prev, bloodSugar: formValues }));
+      setPatientData((prev) => ({ ...prev, bloodSugar: formValues }));
     });
     return () => subscription.unsubscribe();
-  }, [watch, setData]);
+  }, [watch, setPatientData]);
 
   const getColor = useCallback((value) => {
     if (!value) return 'border-slate-200 bg-white';
@@ -84,8 +92,10 @@ export default function GlucoseForm({ data, setData, onNext }) {
   }, []);
 
   const onSubmit = (formData) => {
-    setData((prev) => ({ ...prev, bloodSugar: formData }));
-    onNext();
+    const next = { ...patientData, bloodSugar: formData };
+    setPatientData(next);
+    updatePatientMutation.mutate({ patientId, patientData: next });
+    navigate(`/patient/${patientId}/medications`);
   };
 
   const average = watch('average');

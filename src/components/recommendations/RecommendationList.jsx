@@ -6,19 +6,25 @@ import {
   Loader2,
   X,
 } from 'lucide-react';
-import { SAMPLE_RECOMMENDATIONS } from '../../data/dummyData';
+import { useParams } from 'react-router-dom';
 import MedicationCard from './MedicationCard';
 import AIChatPanel from './AIChatPanel';
-import FormCard from '../ui/FormCard';
 import Button from '../ui/Button';
+import { usePatient } from '../../context/PatientContext';
+import { useRecommendationsQuery, useGenerateRecommendationsMutation } from '../../hooks/useRecommendations';
 
 /**
  * Recommendation List — split-pane layout with independently scrollable
  * recommendation cards (left) and AI chat panel (right).
+ * Data from React Query (TODO: real API in recommendationService).
  */
-export default function RecommendationList({ patientData }) {
-  const [recommendations, setRecommendations] = useState(null);
-  const [loading, setLoading] = useState(false);
+export default function RecommendationList() {
+  const { patientId } = useParams();
+  const { patientData } = usePatient();
+  const { data: recommendations = null } = useRecommendationsQuery(patientId);
+  const generateMutation = useGenerateRecommendationsMutation(patientId);
+  const loading = generateMutation.isPending;
+
   const [actionedMap, setActionedMap] = useState({});
   const [modifyModal, setModifyModal] = useState(null);
   const [modDose, setModDose] = useState('');
@@ -26,13 +32,9 @@ export default function RecommendationList({ patientData }) {
   const [chatDrugContext, setChatDrugContext] = useState(null);
 
   const generateRecs = useCallback(() => {
-    setLoading(true);
     setActionedMap({});
-    setTimeout(() => {
-      setRecommendations(SAMPLE_RECOMMENDATIONS);
-      setLoading(false);
-    }, 1800);
-  }, []);
+    generateMutation.mutate({ patientData });
+  }, [patientData, generateMutation]);
 
   const handleAccept = useCallback(
     (id) => {
