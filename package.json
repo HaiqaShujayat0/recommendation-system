@@ -4,9 +4,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "npx vite",
-    "build": "npx vite build",
-    "preview": "npx vite preview"
+    "dev": "node node_modules/.bin/vite --host 0.0.0.0",
+    "build": "node node_modules/.bin/vite build",
+    "preview": "node node_modules/.bin/vite preview"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.21",
