@@ -35,9 +35,6 @@ const router = createBrowserRouter([
                     // Dashboard (patient list)
                     { path: 'dashboard', element: <PatientSearch /> },
 
-                    // Audit trail
-                    { path: 'audit', element: <AuditTable /> },
-
                     // Patient wizard — /patient/:patientId/*
                     {
                         path: 'patient/:patientId',
@@ -51,6 +48,7 @@ const router = createBrowserRouter([
                             { path: 'glucose',         element: <GlucoseForm /> },
                             { path: 'medications',     element: <MedicationsForm /> },
                             { path: 'recommendations', element: <RecommendationList /> },
+                            { path: 'audit',           element: <AuditTable /> },
                         ],
                     },
                 ],

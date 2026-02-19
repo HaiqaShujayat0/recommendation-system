@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Search, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usePatientsQuery } from '../../hooks/usePatients';
@@ -7,22 +7,20 @@ import StatsCards from './StatsCards';
 import Button from '../ui/Button';
 
 /**
- * Clean dashboard: search input, stats, filtered patient list.
- * Patient list from React Query (TODO: real API in patientService.fetchPatients).
+ * Dashboard: search input, stats, patient list.
+ * Search is server-side — passes query param to GET /patients.
  */
 export default function PatientSearch() {
   const [search, setSearch] = useState('');
   const navigate = useNavigate();
-  const { data: patients = [], isLoading, error } = usePatientsQuery();
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return patients;
-    return patients.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) || p.mrNumber.toLowerCase().includes(q)
-    );
-  }, [search, patients]);
+  // Pass search to server — API filters by email, mrn, first_name, last_name
+  const { data: patients = [], isLoading, error } = usePatientsQuery(
+    search.trim() ? { query: search.trim() } : {}
+  );
+
+  // No local filter needed — API handles it
+  const filtered = patients;
 
   return (
     <div className="max-w-5xl mx-auto space-y-5 animate-fade-in">

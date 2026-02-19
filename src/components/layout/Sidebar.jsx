@@ -33,7 +33,7 @@ const iconMap = {
  */
 export default function Sidebar({
   onBackToSearch,
-  patientData,
+  patientDetail,
   open,
   onToggle,
 }) {
@@ -56,15 +56,13 @@ export default function Sidebar({
   return (
     <aside
       ref={sidebarRef}
-      className={`bg-white shadow-sidebar flex-shrink-0 border-r border-slate-100 transition-all duration-300 ease-in-out relative ${
-        open ? 'w-60 overflow-hidden' : 'w-[52px] overflow-visible'
-      }`}
+      className={`bg-white shadow-sidebar flex-shrink-0 border-r border-slate-100 transition-all duration-300 ease-in-out relative ${open ? 'w-60 overflow-hidden' : 'w-[52px] overflow-visible'
+        }`}
     >
       {/* ─── Expanded state ─── */}
       <div
-        className={`absolute inset-0 w-60 transition-opacity duration-200 ${
-          open ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
+        className={`absolute inset-0 w-60 transition-opacity duration-200 flex flex-col ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
       >
         {/* Collapse toggle — expanded */}
         <button
@@ -73,17 +71,21 @@ export default function Sidebar({
           className="absolute top-3 right-2 z-10 w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 hover:text-primary-700 hover:bg-primary-50 transition-all duration-200"
           aria-label="Collapse sidebar"
         >
+
+
+
           <ChevronLeft className="w-4 h-4" />
         </button>
 
-        {/* Nav content — bottom padding reserves space for the pinned snapshot */}
-        <div className="p-4 pb-[160px] space-y-4">
+        {/* Nav content */}
+        <div className="flex-1 min-h-0 p-4 space-y-3">
           <button
             type="button"
             onClick={onBackToSearch}
             className="flex items-center gap-2 text-slate-400 hover:text-primary-600 text-xs font-semibold w-full transition-colors duration-200 group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+
             Back to Search
           </button>
 
@@ -100,20 +102,18 @@ export default function Sidebar({
                   key={id}
                   type="button"
                   onClick={() => handleNavigate(id)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 relative ${
-                    active
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 relative ${active
                       ? 'bg-primary-50 text-primary-700 font-semibold'
                       : 'text-slate-600 hover:bg-slate-50 hover:text-primary-600'
-                  }`}
+                    }`}
                 >
                   {active && (
                     <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-primary-500 rounded-r-full" />
                   )}
                   {Icon && (
                     <Icon
-                      className={`w-4 h-4 flex-shrink-0 ${
-                        active ? 'text-primary-500' : ''
-                      }`}
+                      className={`w-4 h-4 flex-shrink-0 ${active ? 'text-primary-500' : ''
+                        }`}
                     />
                   )}
                   {label}
@@ -123,54 +123,59 @@ export default function Sidebar({
           </nav>
         </div>
 
-        {/* Clinical Snapshot — pinned to bottom of sidebar */}
-        {patientData && (
-          <div className="absolute bottom-0 left-0 w-60 p-4 bg-white border-t border-slate-100">
-            <div className="p-3.5 bg-primary-50 rounded-xl border border-primary-100">
-              <h4 className="text-[10px] font-bold text-primary-600 uppercase mb-2.5 flex items-center gap-1.5 tracking-wide">
+        {/* Clinical Snapshot — pinned to bottom via flex layout */}
+        {patientDetail && (
+          <div className="flex-shrink-0 p-3 bg-white border-t border-slate-100">
+            <div className="p-2.5 bg-primary-50 rounded-xl border border-primary-100">
+              <h4 className="text-[10px] font-bold text-primary-600 uppercase mb-1.5 flex items-center gap-1.5 tracking-wide">
                 <TrendingUp className="w-3 h-3" />
                 Clinical Snapshot
               </h4>
-              <div className="space-y-2.5 text-xs">
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-500 font-medium">HbA1c</span>
-                  <span
-                    className={`font-bold px-2 py-0.5 rounded-full text-[11px] ${
-                      parseFloat(patientData.labs?.hba1c) > 7
-                        ? 'bg-red-100 text-red-600'
-                        : 'bg-green-100 text-green-700'
-                    }`}
-                  >
-                    {patientData.labs?.hba1c || '--'}%
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-500 font-medium">eGFR</span>
-                  <span
-                    className={`font-bold px-2 py-0.5 rounded-full text-[11px] ${
-                      parseFloat(patientData.labs?.egfr) < 60
-                        ? 'bg-amber-100 text-amber-600'
-                        : 'bg-green-100 text-green-700'
-                    }`}
-                  >
-                    {patientData.labs?.egfr || '--'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-500 font-medium">BMI</span>
-                  <span
-                    className={`font-bold px-2 py-0.5 rounded-full text-[11px] ${
-                      patientData.demographics?.bmi > 30
-                        ? 'bg-red-100 text-red-600'
-                        : patientData.demographics?.bmi > 25
-                          ? 'bg-amber-100 text-amber-600'
-                          : 'bg-green-100 text-green-700'
-                    }`}
-                  >
-                    {patientData.demographics?.bmi ?? '--'}
-                  </span>
-                </div>
-              </div>
+              {(() => {
+                const hba1c = patientDetail.hba1c ?? patientDetail.a1c;
+                const egfr = patientDetail.egfr;
+                const w = patientDetail.weight_kg, h = patientDetail.height_cm;
+                const bmi = (w && h) ? Math.round((w / ((h / 100) ** 2)) * 10) / 10 : null;
+                return (
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500 font-medium">HbA1c</span>
+                      <span
+                        className={`font-bold px-2 py-0.5 rounded-full text-[11px] ${parseFloat(hba1c) > 7
+                            ? 'bg-red-100 text-red-600'
+                            : 'bg-green-100 text-green-700'
+                          }`}
+                      >
+                        {hba1c ?? '--'}%
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500 font-medium">eGFR</span>
+                      <span
+                        className={`font-bold px-2 py-0.5 rounded-full text-[11px] ${parseFloat(egfr) < 60
+                            ? 'bg-amber-100 text-amber-600'
+                            : 'bg-green-100 text-green-700'
+                          }`}
+                      >
+                        {egfr ?? '--'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500 font-medium">BMI</span>
+                      <span
+                        className={`font-bold px-2 py-0.5 rounded-full text-[11px] ${bmi > 30
+                            ? 'bg-red-100 text-red-600'
+                            : bmi > 25
+                              ? 'bg-amber-100 text-amber-600'
+                              : 'bg-green-100 text-green-700'
+                          }`}
+                      >
+                        {bmi ?? '--'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}
@@ -178,9 +183,8 @@ export default function Sidebar({
 
       {/* ─── Collapsed state: icon rail with tooltips ─── */}
       <div
-        className={`absolute inset-0 transition-opacity duration-200 ${
-          !open ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
+        className={`absolute inset-0 transition-opacity duration-200 ${!open ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
       >
         {/* Expand toggle */}
         <div className="flex justify-center pt-3 pb-2">
@@ -211,11 +215,10 @@ export default function Sidebar({
                   onClick={() => handleNavigate(id)}
                   onMouseEnter={() => setHoveredItem(id)}
                   onMouseLeave={() => setHoveredItem(null)}
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 relative ${
-                    active
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 relative ${active
                       ? 'bg-primary-100 text-primary-700 shadow-sm'
                       : 'text-slate-400 hover:bg-slate-100 hover:text-slate-700'
-                  }`}
+                    }`}
                   aria-label={label}
                 >
                   {active && (

@@ -6,6 +6,8 @@ const AUTH_BASE =
 const TOKEN_KEY = 'glyeral_token';
 
 
+
+
 function decodeJWT(token) {
     try {
         const payload = token.split('.')[1];
@@ -16,14 +18,17 @@ function decodeJWT(token) {
     }
 }
 
+
 /* ─── Token helpers ─── */
 function saveToken(token) {
-    localStorage.setItem(TOKEN_KEY, token);    
+    sessionStorage.setItem(TOKEN_KEY, token);
 }
+
+
 
 /** Returns the raw JWT string, or null if not logged in. */
 export function getAuthToken() {
-    return localStorage.getItem(TOKEN_KEY);
+    return sessionStorage.getItem(TOKEN_KEY);
 }
 
 /* ─── Map raw backend messages to professional UI copy ─── */
@@ -36,6 +41,7 @@ function friendlySignupError(raw) {
 }
 
 function friendlyLoginError(raw) {
+    
     if (!raw) return 'Sign-in failed. Please try again.';
     const msg = raw.toLowerCase();
     if (msg.includes('invalid password')) return 'The password you entered is incorrect. Please try again.';
@@ -63,6 +69,7 @@ function buildUser(payload, fallbackEmail = '') {
  */
 export async function signUp({ firstName, lastName, email, password }) {
     try {
+        // Backend expects POST only; GET /signup (e.g. opening API URL in browser) returns 405
         const res = await fetch(`${AUTH_BASE}/signup`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -129,7 +136,7 @@ export function getSession() {
 
     // If token is expired, clear it so all subsequent API calls don't silently fail
     if (payload.exp && payload.exp * 1000 < Date.now()) {
-        localStorage.removeItem(TOKEN_KEY);
+        sessionStorage.removeItem(TOKEN_KEY);
         return null;
     }
 
@@ -150,7 +157,24 @@ export async function clearSession() {
             // backend may be unreachable — still clear local state
         }
     }
-    localStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
+}
+
+/**
+ * Extract basic profile info directly from the stored JWT — no network call.
+ * Handles the backend's non-standard field names (user-name, user-email).
+ */
+export function getProfileFromToken() {
+    const token = getAuthToken();
+    if (!token) return null;
+    const payload = decodeJWT(token);
+    if (!payload) return null;
+    const info = payload?.user || {};
+    return {
+        first_name: info['user-name'] || info.first_name || info.firstName || '',
+        last_name: info['last_name'] || info.lastName || '',
+        email: info['user-email'] || info.email || '',
+    };
 }
 
 /* ─── Profile & settings ─── */
@@ -211,6 +235,12 @@ export async function updateUserProfile({ first_name, last_name, email, org_id }
             return { success: false, error: friendlyUpdateError(data?.error || data?.Message) };
         }
 
+        // Backend rotates the token on profile update — save the new one so
+        // subsequent requests don't use the now-rejected old token.
+        if (data.token) {
+            sessionStorage.setItem(TOKEN_KEY, data.token);
+        }
+
         return { success: true, profile: data };
     } catch {
         return { success: false, error: 'Cannot reach the server. Is the backend running?' };
@@ -236,6 +266,12 @@ export async function updatePassword({ current_password, new_password }) {
 
         if (!res.ok) {
             return { success: false, error: friendlyUpdateError(data?.error || data?.Message) };
+        }
+
+        // Backend rotates the token on password update — save the new one so
+        // subsequent requests don't use the now-rejected old token.
+        if (data.token) {
+            sessionStorage.setItem(TOKEN_KEY, data.token);
         }
 
         return { success: true, data };

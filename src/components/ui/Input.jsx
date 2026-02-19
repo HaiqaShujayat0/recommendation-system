@@ -47,8 +47,8 @@ const Input = React.forwardRef(
             : 'border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/15 hover:border-slate-300'
             }`}
           placeholder={placeholder}
-          value={value}
           onChange={onChange}
+          {...(value !== undefined ? { value } : {})}
           {...rest}
         />
         {hasError && (

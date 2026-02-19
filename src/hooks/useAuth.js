@@ -3,7 +3,7 @@ import { getSession, signIn, signUp, clearSession } from '../services/authServic
 
 /**
  * Returns the currently authenticated user from the cached JWT.
- * No network call — reads localStorage synchronously via initialData.
+ * No network call — reads sessionStorage (via getSession) synchronously via initialData.
  * user is null when logged out.
  */
 export function useCurrentUser() {

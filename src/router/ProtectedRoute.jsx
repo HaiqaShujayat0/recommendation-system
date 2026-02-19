@@ -4,7 +4,7 @@ import { useCurrentUser } from '../hooks/useAuth';
 
 /**
  * Wraps all protected routes.
- * Redirects to /login if no valid JWT is present in localStorage.
+ * Redirects to /login if no valid JWT is present in sessionStorage.
  */
 export default function ProtectedRoute() {
     const { user } = useCurrentUser();

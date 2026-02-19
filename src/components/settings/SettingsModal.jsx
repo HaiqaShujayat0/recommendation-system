@@ -1,9 +1,42 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Eye, EyeOff, Lock, Settings, Shield, X } from 'lucide-react';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 import { fetchUserProfile, updatePassword, updateUserProfile } from '../../services/authService';
+
+const PROFILE_DEFAULTS = {
+  first_name: '',
+  last_name: '',
+  email: '',
+  org_id: '',
+  current_password: '',
+  new_password: '',
+  confirm_new_password: '',
+};
+
+/**
+ * Normalize API profile to form shape.
+ * Handles: top-level or nested under 'user'/'data'/'profile' keys,
+ * snake_case, camelCase, and the backend's non-standard 'user-name'/'user-email' fields.
+ */
+function normalizeProfile(p) {
+  if (!p || typeof p !== 'object') return PROFILE_DEFAULTS;
+  // Unwrap common envelope shapes: { user: {...} }, { data: {...} }, { profile: {...} }
+  const src =
+    (p.user && typeof p.user === 'object' ? p.user : null) ??
+    (p.data && typeof p.data === 'object' ? p.data : null) ??
+    (p.profile && typeof p.profile === 'object' ? p.profile : null) ??
+    p;
+  const str = (v) => (v != null && v !== '' ? String(v) : '');
+  return {
+    ...PROFILE_DEFAULTS,
+    first_name: str(src.first_name ?? src.firstName ?? src['user-name']),
+    last_name: str(src.last_name ?? src.lastName),
+    email: str(src.email ?? src['user-email']),
+    org_id: src.org_id != null ? String(src.org_id) : '',
+  };
+}
 
 export default function SettingsModal({ open, onClose }) {
   const [loadingProfile, setLoadingProfile] = useState(false);
@@ -20,7 +53,10 @@ export default function SettingsModal({ open, onClose }) {
     reset,
     watch,
     formState: { errors, isSubmitting, isDirty },
-  } = useForm({ mode: 'onChange' });
+  } = useForm({
+    mode: 'onChange',
+    defaultValues: PROFILE_DEFAULTS,
+  });
 
   const newPassword = watch('new_password', '');
 
@@ -36,36 +72,19 @@ export default function SettingsModal({ open, onClose }) {
       setProfileError('');
       setLoadingProfile(true);
 
+
       const result = await fetchUserProfile();
       if (!alive) return;
 
       setLoadingProfile(false);
       if (!result.success) {
         setProfileError(result.error || 'Unable to load profile.');
-        // still open with empty fields so user can proceed once backend works
-        reset({
-          first_name: '',
-          last_name: '',
-          email: '',
-          org_id: '',
-          current_password: '',
-          new_password: '',
-          confirm_new_password: '',
-        });
+        reset(PROFILE_DEFAULTS);
         return;
       }
 
-      const p = result.profile || {};
-
-      reset({
-        first_name: p.first_name ?? '',
-        last_name: p.last_name ?? '',
-        email: p.email ?? '',
-        org_id: p.org_id ?? '',
-        current_password: '',
-        new_password: '',
-        confirm_new_password: '',
-      });
+      const formValues = normalizeProfile(result.profile || result.data);
+      reset(formValues);
     };
 
     run();
@@ -93,7 +112,6 @@ export default function SettingsModal({ open, onClose }) {
     };
   }, [open]);
 
-  if (!open) return null;
 
   const onSubmit = async (data) => {
     setSaveError('');
@@ -103,7 +121,7 @@ export default function SettingsModal({ open, onClose }) {
       first_name: data.first_name?.trim(),
       last_name: data.last_name?.trim(),
       email: data.email?.trim(),
-      org_id: data.org_id?.toString().trim() || null,
+      org_id: data.org_id != null && String(data.org_id).trim() !== '' ? String(data.org_id).trim() : null,
     });
 
     if (!profileRes.success) {
@@ -137,6 +155,8 @@ export default function SettingsModal({ open, onClose }) {
   const overlayMouseDown = (e) => {
     if (e.target === e.currentTarget && canClose) onClose?.();
   };
+
+  if (!open) return null;
 
   return (
     <div
@@ -192,215 +212,215 @@ export default function SettingsModal({ open, onClose }) {
           )}
 
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5" id="settings-form">
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-4">
-            <div className="flex items-center justify-between gap-3 mb-3">
-              <div>
-                <p className="text-sm font-bold text-slate-900">Profile</p>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  This information is used for your account.
-                </p>
-              </div>
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-4">
               {loadingProfile && (
-                <div className="text-xs font-medium text-slate-500">Loading…</div>
+                <div className="text-xs font-medium text-slate-500 mb-3">Loading…</div>
               )}
-            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input
-                label="First Name"
-                placeholder="Jane"
-                {...register('first_name', {
-                  required: 'First name is required',
-                  minLength: { value: 2, message: 'At least 2 characters' },
-                  pattern: { value: /^[A-Za-z\s'-]+$/, message: 'Letters only' },
-                })}
-                error={errors.first_name?.message}
-                required
-              />
-              <Input
-                label="Last Name"
-                placeholder="Doe"
-                {...register('last_name', {
-                  required: 'Last name is required',
-                  minLength: { value: 2, message: 'At least 2 characters' },
-                  pattern: { value: /^[A-Za-z\s'-]+$/, message: 'Letters only' },
-                })}
-                error={errors.last_name?.message}
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-              <Input
-                label="Email Address"
-                type="email"
-                placeholder="jane.doe@hospital.org"
-                {...register('email', {
-                  required: 'Email is required',
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: 'Enter a valid email address',
-                  },
-                })}
-                error={errors.email?.message}
-                required
-              />
-              <Input
-                label="Organization ID (optional)"
-                placeholder="e.g. 42"
-                {...register('org_id')}
-                error={errors.org_id?.message}
-              />
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-9 h-9 rounded-2xl bg-slate-100 flex items-center justify-center">
-                <Shield className="w-4.5 h-4.5 text-slate-700" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input
+                  label="First Name"
+                  placeholder="Jane"
+                  {...register('first_name', {
+                    required: 'First name is required',
+                    minLength: { value: 2, message: 'At least 2 characters' },
+                    pattern: { value: /^[A-Za-z\s'-]+$/, message: 'Letters only' },
+                  })}
+                  error={errors.first_name?.message}
+                  required
+                />
+                <Input
+                  label="Last Name"
+                  placeholder="Doe"
+                  {...register('last_name', {
+                    required: 'Last name is required',
+                    minLength: { value: 2, message: 'At least 2 characters' },
+                    pattern: { value: /^[A-Za-z\s'-]+$/, message: 'Letters only' },
+                  })}
+                  error={errors.last_name?.message}
+                  required
+                />
               </div>
-              <div>
-                <p className="text-sm font-bold text-slate-900">Password</p>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Leave blank if you don’t want to change it.
-                </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                <Input
+                  label="Email Address"
+                  type="email"
+                  placeholder="jane.doe@hospital.org"
+                  {...register('email', {
+                    required: 'Email is required',
+                    pattern: {
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      message: 'Enter a valid email address',
+                    },
+                  })}
+                  error={errors.email?.message}
+                  required
+                />
+                <Input
+                  label="Organization ID (optional)"
+                  placeholder="e.g. 42"
+                  {...register('org_id')}
+                  error={errors.org_id?.message}
+                />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5" htmlFor="current_password">
-                  Current Password
-                </label>
-                <div className="relative">
-                  <input
-                    id="current_password"
-                    type={showCurrent ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    className={`w-full px-3.5 py-2.5 pr-11 border-2 rounded-xl focus:outline-none text-sm transition-all duration-200 placeholder:text-slate-400 bg-white ${errors.current_password
-                      ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 bg-red-50/40'
-                      : 'border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/15 hover:border-slate-300'
-                      }`}
-                    {...register('current_password')}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowCurrent((s) => !s)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary-600 transition-colors"
-                    tabIndex={-1}
-                    aria-label={showCurrent ? 'Hide password' : 'Show password'}
-                  >
-                    {showCurrent ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
-                  </button>
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-9 h-9 rounded-2xl bg-slate-100 flex items-center justify-center">
+                  <Shield className="w-4.5 h-4.5 text-slate-700" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-900">Password</p>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Leave blank if you don’t want to change it.
+                  </p>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5" htmlFor="new_password">
-                  New Password
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5" htmlFor="current_password">
+                    Current Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="current_password"
+                      type={showCurrent ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      className={`w-full px-3.5 py-2.5 pr-11 border-2 rounded-xl focus:outline-none text-sm transition-all duration-200 placeholder:text-slate-400 bg-white ${errors.current_password
+                        ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 bg-red-50/40'
+                        : 'border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/15 hover:border-slate-300'
+                        }`}
+                      {...register('current_password', {
+                        validate: (v) => {
+                          if (newPassword && !(v?.trim())) return 'Current password is required to set a new one.';
+                          return true;
+                        },
+                      })}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrent((s) => !s)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary-600 transition-colors"
+                      tabIndex={-1}
+                      aria-label={showCurrent ? 'Hide password' : 'Show password'}
+                    >
+                      {showCurrent ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
+                    </button>
+                  </div>
+                  {errors.current_password && (
+                    <p className="text-xs text-red-600 mt-1.5 font-medium">{errors.current_password.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5" htmlFor="new_password">
+                    New Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="new_password"
+                      type={showNew ? 'text' : 'password'}
+                      placeholder="New password"
+                      className={`w-full px-3.5 py-2.5 pr-11 border-2 rounded-xl focus:outline-none text-sm transition-all duration-200 placeholder:text-slate-400 bg-white ${errors.new_password
+                        ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 bg-red-50/40'
+                        : 'border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/15 hover:border-slate-300'
+                        }`}
+                      {...register('new_password', {
+                        validate: (value) => {
+                          if (!value) return true;
+                          if (value.length < 8) return 'At least 8 characters';
+                          if (!/[A-Z]/.test(value)) return 'One uppercase letter required';
+                          if (!/[a-z]/.test(value)) return 'One lowercase letter required';
+                          if (!/\d/.test(value)) return 'One number required';
+                          return true;
+                        },
+                      })}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNew((s) => !s)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary-600 transition-colors"
+                      tabIndex={-1}
+                      aria-label={showNew ? 'Hide password' : 'Show password'}
+                    >
+                      {showNew ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
+                    </button>
+                  </div>
+                  {errors.new_password && (
+                    <p className="flex items-center gap-1.5 text-xs text-red-600 mt-1.5 animate-fade-in font-medium">
+                      <Lock className="w-3.5 h-3.5 flex-shrink-0" />
+                      {errors.new_password.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5" htmlFor="confirm_new_password">
+                  Confirm New Password
                 </label>
                 <div className="relative">
                   <input
-                    id="new_password"
-                    type={showNew ? 'text' : 'password'}
-                    placeholder="New password"
-                    className={`w-full px-3.5 py-2.5 pr-11 border-2 rounded-xl focus:outline-none text-sm transition-all duration-200 placeholder:text-slate-400 bg-white ${errors.new_password
+                    id="confirm_new_password"
+                    type={showConfirm ? 'text' : 'password'}
+                    placeholder="Confirm new password"
+                    className={`w-full px-3.5 py-2.5 pr-11 border-2 rounded-xl focus:outline-none text-sm transition-all duration-200 placeholder:text-slate-400 bg-white ${errors.confirm_new_password
                       ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 bg-red-50/40'
                       : 'border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/15 hover:border-slate-300'
                       }`}
-                    {...register('new_password', {
+                    {...register('confirm_new_password', {
                       validate: (value) => {
-                        if (!value) return true;
-                        if (value.length < 8) return 'At least 8 characters';
-                        if (!/[A-Z]/.test(value)) return 'One uppercase letter required';
-                        if (!/[a-z]/.test(value)) return 'One lowercase letter required';
-                        if (!/\d/.test(value)) return 'One number required';
-                        return true;
+                        if (!newPassword) return true;
+                        return value === newPassword || 'Passwords do not match';
                       },
                     })}
                   />
                   <button
                     type="button"
-                    onClick={() => setShowNew((s) => !s)}
+                    onClick={() => setShowConfirm((s) => !s)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary-600 transition-colors"
                     tabIndex={-1}
-                    aria-label={showNew ? 'Hide password' : 'Show password'}
+                    aria-label={showConfirm ? 'Hide password' : 'Show password'}
                   >
-                    {showNew ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
+                    {showConfirm ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
                   </button>
                 </div>
-                {errors.new_password && (
+                {errors.confirm_new_password && (
                   <p className="flex items-center gap-1.5 text-xs text-red-600 mt-1.5 animate-fade-in font-medium">
-                    <Lock className="w-3.5 h-3.5 flex-shrink-0" />
-                    {errors.new_password.message}
+                    {errors.confirm_new_password.message}
                   </p>
                 )}
               </div>
             </div>
 
-            <div className="mt-4">
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5" htmlFor="confirm_new_password">
-                Confirm New Password
-              </label>
-              <div className="relative">
-                <input
-                  id="confirm_new_password"
-                  type={showConfirm ? 'text' : 'password'}
-                  placeholder="Confirm new password"
-                  className={`w-full px-3.5 py-2.5 pr-11 border-2 rounded-xl focus:outline-none text-sm transition-all duration-200 placeholder:text-slate-400 bg-white ${errors.confirm_new_password
-                    ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 bg-red-50/40'
-                    : 'border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/15 hover:border-slate-300'
-                    }`}
-                  {...register('confirm_new_password', {
-                    validate: (value) => {
-                      if (!newPassword) return true;
-                      return value === newPassword || 'Passwords do not match';
-                    },
-                  })}
-                />
-                <button
+            <div className="flex items-center justify-between gap-3 pt-2">
+              <p className="text-xs text-slate-500">
+                {isDirty ? 'You have unsaved changes.' : ' '}
+              </p>
+              <div className="flex items-center gap-3">
+                <Button
                   type="button"
-                  onClick={() => setShowConfirm((s) => !s)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary-600 transition-colors"
-                  tabIndex={-1}
-                  aria-label={showConfirm ? 'Hide password' : 'Show password'}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => canClose && onClose?.()}
+                  disabled={!canClose}
                 >
-                  {showConfirm ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
-                </button>
+                  Close
+                </Button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  loading={isSubmitting}
+                  icon={<Shield className="w-4 h-4" />}
+                >
+                  Save changes
+                </Button>
               </div>
-              {errors.confirm_new_password && (
-                <p className="flex items-center gap-1.5 text-xs text-red-600 mt-1.5 animate-fade-in font-medium">
-                  {errors.confirm_new_password.message}
-                </p>
-              )}
             </div>
-          </div>
-
-          <div className="flex items-center justify-between gap-3 pt-2">
-            <p className="text-xs text-slate-500">
-              {isDirty ? 'You have unsaved changes.' : ' '}
-            </p>
-            <div className="flex items-center gap-3">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => canClose && onClose?.()}
-                disabled={!canClose}
-              >
-                Close
-              </Button>
-              <Button
-                type="submit"
-                size="sm"
-                loading={isSubmitting}
-                icon={<Shield className="w-4 h-4" />}
-              >
-                Save changes
-              </Button>
-            </div>
-          </div>
-        </form>
+          </form>
         </div>
       </div>
     </div>

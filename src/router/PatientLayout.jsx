@@ -3,31 +3,37 @@ import { Outlet, useParams, useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from '../components/layout/Sidebar';
 import { usePatient } from '../context/PatientContext';
 import { usePatientsQuery, usePatientQuery } from '../hooks/usePatients';
-import { EMPTY_PATIENT_DATA } from '../data/dummyData';
+import { useLatestLabsQuery } from '../hooks/useLabs';
+import { useMedsQuery } from '../hooks/useMeds';
 
 /**
  * Layout for all /patient/:patientId/* routes.
  *
- * - Resolves patientId from URL; syncs selectedPatient and patientData from React Query into PatientContext.
- * - Patient data comes from usePatientQuery (TODO: real API in patientService).
+ * - Single prefetch point: fetches patient, labs, and meds data here.
+ *   All child forms call the same hooks, but hit React Query's warm cache.
+ * - Syncs selectedPatient (summary row) into PatientContext for the Header.
  */
 export default function PatientLayout() {
   const { patientId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { setSelectedPatient, patientData, setPatientData, sidebarOpen, setSidebarOpen } = usePatient();
+  const { setSelectedPatient, sidebarOpen, setSidebarOpen } = usePatient();
 
+  // ── Prefetch all patient-scoped data here (single fetch point) ──
   const { data: patients = [] } = usePatientsQuery();
-  const { data: queryPatientData, isSuccess: patientDataReady } = usePatientQuery(
+  const { data: patientDetail } = usePatientQuery(
     patientId === 'new' ? null : patientId
   );
+  // These populate the React Query cache — child forms read from cache, no extra network call
+  useLatestLabsQuery(patientId === 'new' ? null : patientId);
+  useMedsQuery(patientId === 'new' ? null : patientId);
 
   const isRecommendations = location.pathname.endsWith('/recommendations');
 
+  // Sync selectedPatient summary into context (for Header display)
   useEffect(() => {
     if (patientId === 'new') {
       setSelectedPatient({ id: 0, mrNumber: 'NEW', name: 'New Patient' });
-      setPatientData(EMPTY_PATIENT_DATA);
       return;
     }
     const found = patients.find((p) => String(p.id) === patientId);
@@ -36,14 +42,7 @@ export default function PatientLayout() {
       return;
     }
     if (found) setSelectedPatient(found);
-  }, [patientId, patients, setSelectedPatient, setPatientData, navigate]);
-
-  useEffect(() => {
-    if (patientId === 'new') return;
-    if (!patientDataReady || queryPatientData == null) return;
-    const { _summary, ...formData } = queryPatientData;
-    setPatientData(formData);
-  }, [patientId, patientDataReady, queryPatientData, setPatientData]);
+  }, [patientId, patients, setSelectedPatient, navigate]);
 
   useEffect(() => {
     if (patientId === 'new') return;
@@ -55,7 +54,7 @@ export default function PatientLayout() {
   return (
     <>
       <Sidebar
-        patientData={patientData}
+        patientDetail={patientDetail}
         open={sidebarOpen}
         onToggle={() => setSidebarOpen((o) => !o)}
         onBackToSearch={() => navigate('/dashboard')}

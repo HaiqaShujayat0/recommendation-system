@@ -25,7 +25,7 @@ export async function authFetch(url, options = {}) {
 
     if (res.status === 401) {
         // Token expired or revoked mid-session — wipe local state and force re-login
-        localStorage.removeItem(TOKEN_KEY);
+        sessionStorage.removeItem(TOKEN_KEY);
         window.location.href = '/login';
     }
 

@@ -10,7 +10,6 @@ import { useParams } from 'react-router-dom';
 import MedicationCard from './MedicationCard';
 import AIChatPanel from './AIChatPanel';
 import Button from '../ui/Button';
-import { usePatient } from '../../context/PatientContext';
 import { useRecommendationsQuery, useGenerateRecommendationsMutation } from '../../hooks/useRecommendations';
 
 /**
@@ -20,7 +19,6 @@ import { useRecommendationsQuery, useGenerateRecommendationsMutation } from '../
  */
 export default function RecommendationList() {
   const { patientId } = useParams();
-  const { patientData } = usePatient();
   const { data: recommendations = null } = useRecommendationsQuery(patientId);
   const generateMutation = useGenerateRecommendationsMutation(patientId);
   const loading = generateMutation.isPending;
@@ -33,8 +31,8 @@ export default function RecommendationList() {
 
   const generateRecs = useCallback(() => {
     setActionedMap({});
-    generateMutation.mutate({ patientData });
-  }, [patientData, generateMutation]);
+    generateMutation.mutate({});
+  }, [generateMutation]);
 
   const handleAccept = useCallback(
     (id) => {

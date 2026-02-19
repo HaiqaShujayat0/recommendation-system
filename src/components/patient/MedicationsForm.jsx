@@ -4,8 +4,68 @@ import { Brain, ChevronRight, Pill } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import FormCard from '../ui/FormCard';
 import Button from '../ui/Button';
-import { usePatient } from '../../context/PatientContext';
-import { useUpdatePatientMutation } from '../../hooks/usePatients';
+import {
+  useMedsQuery,
+  useCreateMedMutation,
+  useUpdateMedMutation,
+  useDeleteMedMutation,
+} from '../../hooks/useMeds';
+
+/**
+ * Map an array of API med records → form flat key/value shape.
+ * Matches by name + frequency to distinguish e.g. lispro_breakfast vs lispro_dinner.
+ */
+function apiToForm(meds) {
+  if (!meds?.length) return {};
+  const defaults = {};
+  for (const med of meds) {
+    if (!med.active) continue;
+    const dose = parseFloat(med.dose) || 0;
+    switch (med.name) {
+      case 'metformin': defaults.metformin = dose; break;
+      case 'glimepiride': defaults.glimepiride = dose; break;
+      case 'tradjenta': defaults.tradjenta = true; break;
+      case 'farxiga': defaults.farxiga = dose; break;
+      case 'semaglutide': defaults.semaglutide = dose; break;
+      case 'glargine': defaults.glargine = dose; break;
+      case 'lispro':
+        if (med.frequency === 'before breakfast') defaults.lispro_breakfast = dose;
+        if (med.frequency === 'before lunch') defaults.lispro_lunch = dose;
+        if (med.frequency === 'before dinner') defaults.lispro_dinner = dose;
+        break;
+      case 'repaglinide':
+        if (med.frequency === 'before breakfast') defaults.repaglinide_breakfast = dose;
+        if (med.frequency === 'before lunch') defaults.repaglinide_lunch = dose;
+        if (med.frequency === 'before dinner') defaults.repaglinide_dinner = dose;
+        break;
+      default: break;
+    }
+  }
+  return defaults;
+}
+
+/** Map one form key + value → the API record shape { name, dose, frequency, active } */
+function formKeyToApiRecord(key, value) {
+  const isOff = value === 0 || value === false || value === '0' || value === 0.0;
+  const doseNum = typeof value === 'boolean' ? (value ? 5 : 0) : Number(value);
+
+  const MAP = {
+    metformin: { name: 'metformin', dose: `${doseNum}mg`, frequency: 'daily' },
+    glimepiride: { name: 'glimepiride', dose: `${doseNum}mg`, frequency: 'daily' },
+    tradjenta: { name: 'tradjenta', dose: '5mg', frequency: 'daily' },
+    farxiga: { name: 'farxiga', dose: `${doseNum}mg`, frequency: 'daily' },
+    semaglutide: { name: 'semaglutide', dose: `${doseNum}mg`, frequency: 'weekly' },
+    glargine: { name: 'glargine', dose: `${doseNum}u`, frequency: 'before dinner' },
+    lispro_breakfast: { name: 'lispro', dose: `${doseNum}u`, frequency: 'before breakfast' },
+    lispro_lunch: { name: 'lispro', dose: `${doseNum}u`, frequency: 'before lunch' },
+    lispro_dinner: { name: 'lispro', dose: `${doseNum}u`, frequency: 'before dinner' },
+    repaglinide_breakfast: { name: 'repaglinide', dose: `${doseNum}mg`, frequency: 'before breakfast' },
+    repaglinide_lunch: { name: 'repaglinide', dose: `${doseNum}mg`, frequency: 'before lunch' },
+    repaglinide_dinner: { name: 'repaglinide', dose: `${doseNum}mg`, frequency: 'before dinner' },
+  };
+
+  return { ...MAP[key], active: !isOff };
+}
 
 /**
  * Medications Form Component with Validation
@@ -31,29 +91,35 @@ const MEDICATIONS = [
 ];
 
 export default function MedicationsForm() {
-  const { patientData, setPatientData } = usePatient();
   const navigate = useNavigate();
   const { patientId } = useParams();
-  const updatePatientMutation = useUpdatePatientMutation();
+
+  // Reads from React Query cache (prefetched by PatientLayout)
+  const { data: existingMeds = [] } = useMedsQuery(patientId === 'new' ? null : patientId);
+  const createMedMutation = useCreateMedMutation();
+  const updateMedMutation = useUpdateMedMutation();
+  const deleteMedMutation = useDeleteMedMutation();
 
   const {
     register,
     handleSubmit,
     watch,
     setValue,
+    reset,
     formState: { errors },
   } = useForm({
-    defaultValues: patientData.medications,
+    defaultValues: {},
     mode: 'onChange',
   });
 
-  // Sync form → PatientContext via watch subscription
+  // Hydrate form from existing med records on edit
   useEffect(() => {
-    const subscription = watch((formValues) => {
-      setPatientData((prev) => ({ ...prev, medications: formValues }));
-    });
-    return () => subscription.unsubscribe();
-  }, [watch, setPatientData]);
+    if (patientId !== 'new' && existingMeds.length > 0) {
+      reset(apiToForm(existingMeds));
+    }
+  }, [existingMeds, patientId, reset]);
+
+
 
   const update = useCallback((key, value) => {
     setValue(key, value);
@@ -165,10 +231,29 @@ export default function MedicationsForm() {
   };
 
   const onSubmit = (formData) => {
-    const next = { ...patientData, medications: formData };
-    setPatientData(next);
-    updatePatientMutation.mutate({ patientId, patientData: next });
-    navigate(`/patient/${patientId}/recommendations`);
+
+    const promises = MEDICATIONS.map(({ key }) => {
+      const value = formData[key];
+      const isOff = value === 0 || value === false || value === '0' || value === 0.0;
+      const record = formKeyToApiRecord(key, value);
+
+      // Find existing API record matching by name + frequency
+      const existing = existingMeds.find(
+        (m) => m.name === record.name && m.frequency === record.frequency
+      );
+
+      if (existing) {
+        if (isOff) {
+          return deleteMedMutation.mutateAsync({ patientId, medId: existing.id });
+        }
+        return updateMedMutation.mutateAsync({ patientId, medId: existing.id, data: record });
+      } else if (!isOff) {
+        return createMedMutation.mutateAsync({ patientId, data: record });
+      }
+      return Promise.resolve();
+    });
+
+    Promise.all(promises).then(() => navigate(`/patient/${patientId}/recommendations`));
   };
 
   return (

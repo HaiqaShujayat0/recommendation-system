@@ -4,8 +4,24 @@ import { AlertTriangle, ChevronRight, Droplets } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import FormCard from '../ui/FormCard';
 import Button from '../ui/Button';
-import { usePatient } from '../../context/PatientContext';
-import { useUpdatePatientMutation } from '../../hooks/usePatients';
+import { useLatestLabsQuery, useCreateLabMutation } from '../../hooks/useLabs';
+
+/** Map an API lab record → glucose form fields */
+function apiToForm(lab) {
+  if (!lab) return {};
+  return {
+    beforeBreakfast: lab.fasting_glucose ?? '',
+    // beforeLunch, beforeDinner, beforeBed have no API source — left empty
+  };
+}
+
+/** Map glucose form fields → API request body for POST /patients/{id}/labs */
+function formToApi(f) {
+  const payload = {};
+  if (f.beforeBreakfast) payload.fasting_glucose = Number(f.beforeBreakfast);
+  if (f.average) payload.random_glucose = Number(f.average);
+  return payload;
+}
 
 /**
  * Glucose Form Component with Validation
@@ -28,21 +44,31 @@ const SLOT_KEYS = TIME_SLOTS.map((s) => s.key);
 
 
 export default function GlucoseForm() {
-  const { patientData, setPatientData } = usePatient();
   const navigate = useNavigate();
   const { patientId } = useParams();
-  const updatePatientMutation = useUpdatePatientMutation();
+
+  // Reads from React Query cache (prefetched by PatientLayout)
+  const { data: existingLab } = useLatestLabsQuery(patientId === 'new' ? null : patientId);
+  const createLabMutation = useCreateLabMutation();
 
   const {
     register,
     handleSubmit,
     watch,
     setValue,
+    reset,
     formState: { errors },
   } = useForm({
-    defaultValues: patientData.bloodSugar,
+    defaultValues: {},
     mode: 'onChange',
   });
+
+  // Hydrate beforeBreakfast from the latest lab's fasting_glucose on edit
+  useEffect(() => {
+    if (patientId !== 'new' && existingLab) {
+      reset(apiToForm(existingLab));
+    }
+  }, [existingLab, patientId, reset]);
 
   const beforeBreakfast = watch('beforeBreakfast');
   const beforeLunch = watch('beforeLunch');
@@ -62,13 +88,7 @@ export default function GlucoseForm() {
     setValue('average', average, { shouldValidate: false });
   }, [beforeBreakfast, beforeLunch, beforeDinner, beforeBed, setValue]);
 
-  // Sync form → PatientContext via watch subscription
-  useEffect(() => {
-    const subscription = watch((formValues) => {
-      setPatientData((prev) => ({ ...prev, bloodSugar: formValues }));
-    });
-    return () => subscription.unsubscribe();
-  }, [watch, setPatientData]);
+
 
   const getColor = useCallback((value) => {
     if (!value) return 'border-slate-200 bg-white';
@@ -92,10 +112,14 @@ export default function GlucoseForm() {
   }, []);
 
   const onSubmit = (formData) => {
-    const next = { ...patientData, bloodSugar: formData };
-    setPatientData(next);
-    updatePatientMutation.mutate({ patientId, patientData: next });
-    navigate(`/patient/${patientId}/medications`);
+    const apiPayload = formToApi(formData);
+    if (Object.keys(apiPayload).length > 0) {
+      createLabMutation.mutate({ patientId, data: apiPayload }, {
+        onSuccess: () => navigate(`/patient/${patientId}/medications`),
+      });
+    } else {
+      navigate(`/patient/${patientId}/medications`);
+    }
   };
 
   const average = watch('average');

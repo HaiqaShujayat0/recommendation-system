@@ -4,19 +4,42 @@ import { Activity, ChevronRight } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import FormCard from '../ui/FormCard';
 import Button from '../ui/Button';
-import { usePatient } from '../../context/PatientContext';
-import { useUpdatePatientMutation } from '../../hooks/usePatients';
+import { useLatestLabsQuery, useCreateLabMutation } from '../../hooks/useLabs';
 
-/**
- * Labs Form Component with Validation
- *
- * VALIDATION RULES:
- * - HbA1c: Required, 0-20%
- * - eGFR: Required, 0-200 mL/min
- * - Creatinine: Optional, 0-10 mg/dL
- * - LDL: Optional, 0-500 mg/dL
- * - Urine Albumin: Optional, 0-1000 mg/L
- */
+/** Map an API lab record → form field names */
+function apiToForm(lab) {
+  if (!lab) return {};
+  return {
+    hba1c: lab.a1c ?? '',
+    egfr: lab.egfr ?? '',
+    creatinine: lab.creatinine ?? '',
+    lipidPanel: lab.ldl ?? '',
+    urineAlbumin: lab.uacr ?? '',
+    hdl: lab.hdl ?? '',
+    triglycerides: lab.triglycerides ?? '',
+    alt: lab.alt ?? '',
+    ast: lab.ast ?? '',
+    potassium: lab.potassium ?? '',
+    fastingGlucose: lab.fasting_glucose ?? '',
+  };
+}
+
+/** Map form fields → API request body for POST /patients/{id}/labs */
+function formToApi(f) {
+  return {
+    a1c: f.hba1c ? Number(f.hba1c) : undefined,
+    egfr: f.egfr ? Number(f.egfr) : undefined,
+    creatinine: f.creatinine ? Number(f.creatinine) : undefined,
+    ldl: f.lipidPanel ? Number(f.lipidPanel) : undefined,
+    uacr: f.urineAlbumin ? Number(f.urineAlbumin) : undefined,
+    hdl: f.hdl ? Number(f.hdl) : undefined,
+    triglycerides: f.triglycerides ? Number(f.triglycerides) : undefined,
+    alt: f.alt ? Number(f.alt) : undefined,
+    ast: f.ast ? Number(f.ast) : undefined,
+    potassium: f.potassium ? Number(f.potassium) : undefined,
+    fasting_glucose: f.fastingGlucose ? Number(f.fastingGlucose) : undefined,
+  };
+}
 
 const LABS = [
   { key: 'hba1c', label: 'HbA1c', unit: '%', normal: '< 5.7', critical: true },
@@ -24,47 +47,55 @@ const LABS = [
   { key: 'creatinine', label: 'Creatinine', unit: 'mg/dL', normal: '0.7-1.3', critical: false },
   { key: 'lipidPanel', label: 'LDL', unit: 'mg/dL', normal: '< 100', critical: false },
   { key: 'urineAlbumin', label: 'Urine Albumin', unit: 'mg/L', normal: '< 30', critical: false },
+  { key: 'hdl', label: 'HDL', unit: 'mg/dL', normal: '> 40', critical: false },
+  { key: 'triglycerides', label: 'Triglycerides', unit: 'mg/dL', normal: '< 150', critical: false },
+  { key: 'alt', label: 'ALT', unit: 'U/L', normal: '7-56', critical: false },
+  { key: 'ast', label: 'AST', unit: 'U/L', normal: '10-40', critical: false },
+  { key: 'potassium', label: 'Potassium', unit: 'mEq/L', normal: '3.5-5.0', critical: false },
+  { key: 'fastingGlucose', label: 'Fasting Glucose', unit: 'mg/dL', normal: '< 100', critical: false },
 ];
 
 export default function LabsForm() {
-  const { patientData, setPatientData } = usePatient();
   const navigate = useNavigate();
   const { patientId } = useParams();
-  const updatePatientMutation = useUpdatePatientMutation();
+
+  // Reads from React Query cache (prefetched by PatientLayout)
+  const { data: existingLab } = useLatestLabsQuery(patientId === 'new' ? null : patientId);
+  const createLabMutation = useCreateLabMutation();
 
   const {
     register,
     handleSubmit,
     watch,
+    reset,
     formState: { errors, isValid },
   } = useForm({
-    defaultValues: patientData.labs,
+    defaultValues: {},
     mode: 'onChange',
   });
 
-  // Sync form → PatientContext via watch subscription
+  // Hydrate form from latest lab record
   useEffect(() => {
-    const subscription = watch((formValues) => {
-      setPatientData((prev) => ({ ...prev, labs: formValues }));
-    });
-    return () => subscription.unsubscribe();
-  }, [watch, setPatientData]);
+    if (patientId !== 'new' && existingLab) {
+      reset(apiToForm(existingLab));
+    }
+  }, [existingLab, patientId, reset]);
 
   const getStatusStyle = useCallback((key, value) => {
     if (!value) {
       switch (key) {
-        case 'hba1c':
-          return 'border-amber-200 bg-amber-50/40';
-        case 'egfr':
-          return 'border-secondary-200 bg-secondary-50/40';
-        case 'creatinine':
-          return 'border-sky-200 bg-sky-50/40';
-        case 'lipidPanel':
-          return 'border-purple-200 bg-purple-50/40';
-        case 'urineAlbumin':
-          return 'border-violet-200 bg-violet-50/40';
-        default:
-          return 'border-slate-200 bg-slate-50';
+        case 'hba1c': return 'border-amber-200 bg-amber-50/40';
+        case 'egfr': return 'border-secondary-200 bg-secondary-50/40';
+        case 'creatinine': return 'border-sky-200 bg-sky-50/40';
+        case 'lipidPanel': return 'border-purple-200 bg-purple-50/40';
+        case 'urineAlbumin': return 'border-violet-200 bg-violet-50/40';
+        case 'hdl': return 'border-teal-200 bg-teal-50/40';
+        case 'triglycerides': return 'border-orange-200 bg-orange-50/40';
+        case 'alt': return 'border-lime-200 bg-lime-50/40';
+        case 'ast': return 'border-lime-200 bg-lime-50/40';
+        case 'potassium': return 'border-cyan-200 bg-cyan-50/40';
+        case 'fastingGlucose': return 'border-rose-200 bg-rose-50/40';
+        default: return 'border-slate-200 bg-slate-50';
       }
     }
 
@@ -96,16 +127,15 @@ export default function LabsForm() {
   }, []);
 
   const onSubmit = (formData) => {
-    const next = { ...patientData, labs: formData };
-    setPatientData(next);
-    updatePatientMutation.mutate({ patientId, patientData: next });
-    navigate(`/patient/${patientId}/glucose`);
+    createLabMutation.mutate({ patientId, data: formToApi(formData) }, {
+      onSuccess: () => navigate(`/patient/${patientId}/glucose`),
+    });
   };
 
-
+  const isSaving = createLabMutation.isPending;
+  const saveError = createLabMutation.error?.message;
   const egfr = watch('egfr');
   const ckd = getCkdStage(egfr);
-
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -114,6 +144,12 @@ export default function LabsForm() {
         subtitle="Key labs driving glycemic control and renal safety checks."
         accentColor="secondary"
       >
+        {saveError && (
+          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {saveError}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 stagger-children">
             {LABS.map(({ key, label, unit, normal, critical }) => {
@@ -156,7 +192,9 @@ export default function LabsForm() {
                                   ? 10
                                   : key === 'lipidPanel'
                                     ? 500
-                                    : 1000,
+                                    : key === 'potassium'
+                                      ? 10
+                                      : 1000,
                           message: `Please enter a valid ${label} value`,
                         },
                         valueAsNumber: true,
@@ -205,7 +243,8 @@ export default function LabsForm() {
           <div className="mt-6 flex justify-end">
             <Button
               type="submit"
-              disabled={!isValid}
+              disabled={!isValid || isSaving}
+              loading={isSaving}
               icon={<ChevronRight className="w-4 h-4" />}
             >
               Next: Blood Sugar
